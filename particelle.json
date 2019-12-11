@@ -5,25 +5,25 @@
 			"id": 0,
 			"type": "Feature",
 			"geometry": {
-				"id": 0
+				"id": 0,
 				"type": "Polygon",
 				"coordinates": [[[11.17961585485967, 46.08869322461735],[11.17966424188877, 46.08871163196627],[11.17975505900981, 46.08861897295156],[11.17969310888976, 46.08861813044575],[11.17966378591764, 46.08860779108948],[11.17961585485967, 46.08869322461735]]]
 			},
 			"properties": {
-				"area": 59.6242073237983
-				"centroidX": 11.179677157642184
-				"centroidY": 46.08865646465009
-				"codcc": 105
-				"comu": "61"
-				"comune": "CIVEZZANO"
-				"ctwexpr": null
-				"ctwexpr_id": null
-				"dcat": "CIVEZZANO"
-				"dsup_sopra": ""
-				"dsup_sotto": ""
-				"fab": "S"
-				"num": ".135"
-				"perimeter": 34.25820797093637
+				"area": 59.6242073237983,
+				"centroidX": 11.179677157642184,
+				"centroidY": 46.08865646465009,
+				"codcc": 105,
+				"comu": "61",
+				"comune": "CIVEZZANO",
+				"ctwexpr": null,
+				"ctwexpr_id": null,
+				"dcat": "CIVEZZANO",
+				"dsup_sopra": "",
+				"dsup_sotto": "",
+				"fab": "S",
+				"num": ".135",
+				"perimeter": 34.25820797093637,
 				"tipop": "P"
 			}
 		}
