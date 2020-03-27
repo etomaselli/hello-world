@@ -10,7 +10,7 @@ DATI OPEN:
 	- Portale Open Data UE: https://data.europa.eu/euodp/it/home
 	- https://www.europeandataportal.eu/en
 - ITALIA:
-	- Dati Aperti della PA: https://www.dati.gov.it/
+	- Dati Aperti della PA (anche formato OData): https://www.dati.gov.it/
 	- Dati geo della PA: https://geodati.gov.it/geoportale/
 	- datahub.io: https://datahub.io/
 	- DatiOpen.it (poco aggiornato): http://www.datiopen.it/
