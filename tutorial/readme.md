@@ -29,5 +29,31 @@ Questo tutorial illustra come creare con Cyclotron una dashboard che includerà 
 - dati geospaziali e geoJSON su mappa interattiva
 - criptazione di dati sensibili nella configurazione.
 
-I dati utilizzati si riferiscono alla diffusione del virus Covid-19 in Italia e sono resi disponibili dalla Protezione Civile sulla seguente repository: https://github.com/pcm-dpc/COVID-19.
+I dati utilizzati si riferiscono alla diffusione del virus Covid-19 in Italia e sono resi disponibili dalla Protezione Civile sulla seguente repository: https://github.com/pcm-dpc/COVID-19. Le altre fonti dati utilizzate sono:
+
+- confini amministrativi delle regioni italiane, forniti da https://gist.github.com/datajournalism-it
+- 
+
+### 1. Creazione di una Nuova Dashboard
+
+Dall'interfaccia di Cyclotron, crea una nuova dashboard denominata `analisi-covid19-italia`. Nella sezione *Details* dell'editor si possono configurare le proprietà generali della dashboard, come il tema grafico o la barra laterale. Poiché ogni dashboard viene salvata come documento JSON, cliccando sul pulsante *Edit JSON* si può visualizzare e modificare direttamente tale documento.
+
+Questo è un esempio della configurazione iniziale della dashboard:
+
+```
+{
+    "description": "Analisi della diffusione del virus Covid-19 in Italia",
+    "name": "analisi-covid19-italia",
+    "pages": [],
+    "showDashboardControls": false,
+    "sidebar": {
+        "showDashboardSidebar": false
+    },
+    "theme": "light"
+}
+```
+
+### 2. Creazione delle Sorgenti
+
+
 
