@@ -165,6 +165,45 @@ Adesso il documento JSON completo del widget slider dovrebbe essere questo:
 }
 ```
 
+### 4. Contatori
+
+Il file JSON https://github.com/pcm-dpc/COVID-19/blob/master/dati-json/dpc-covid19-ita-andamento-nazionale.json contiene i dati sul numero di contagi, ricoveri, decessi, tamponi registrati giorno per giorno a livello nazionale. Questi dati possono essere analizzati sulla dashboard tramite la configurazione di una datasource, che li recupererà e rielaborerà per la visualizzazione in un widget.
+
+Nella sezione *Data Sources* dell'editor, clicca sul pulsante *Add Data source* per creare una nuova datasource di tipo `JSON` e assegnale le seguenti proprietà:
+
+- Name: `contatori-nazionali`
+- URL: `https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-json/dpc-covid19-ita-andamento-nazionale.json`
+- Subscription To Parameters: `dataSelezionata`
+
+La datasource si aggiornerà ogni volta che il parametro **dataSelezionata** avrà un nuovo valore, il quale verrà usato per filtrare tra i dati solo quelli relativi alla data selezionata. La proprietà *Post-Processor*, quando specificata, è una funzione JavaScript che riceve in input il dataset ottenuto dalla chiamata all'URL (che in questo esempio è un'array di giorni con i relativi dati) e può modificarlo prima che venga restituito come risultato della datasource. In questo caso, la funzione dovrà trovare nell'array di giorni quello corrispondente alla data selezionata e preparare i dati per il widget che li riceverà.
+
+Configura la proprietà *Post-Processor* come segue:
+
+```
+e = function(dataset){
+    var result = [];
+    var day = Cyclotron.parameters.dataSelezionata; //accesso al parametro
+    
+    var dayData = _.find(dataset, function(d){
+        return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');
+    });
+    
+    if(dayData){
+        result.push(dayData);
+    }
+    
+    return result;
+}
+```
+
+Ora che la datasource è pronta, torna alla pagina `analisi-nazionale` e crea un nuovo widget di tipo `Number` con le seguenti proprietà:
+
+- Data Source: `contatori-nazionali`
+- Orientation: `vertical`
+- Auto-Size Numbers: `false`
+- Grid Rows: `4`
+- Grid Columns: `1`
+
 
 
 
