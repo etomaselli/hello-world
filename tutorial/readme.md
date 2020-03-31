@@ -55,7 +55,7 @@ Questo è un esempio della configurazione iniziale della dashboard:
 
 La dashboard di questo tutorial sarà composta da due pagine: la prima mostrerà la mappa dell'Italia e alcuni dati giornalieri a livello nazionale; selezionando una regione dalla mappa si potrà accedere alla seconda pagina per visualizzare i dati giornalieri a livello regionale. In entrambe le pagine, uno slider temporale permetterà di selezionare il giorno da analizzare.
 
-### 2. Intestazione e Slider Temporale
+### 2. Intestazione
 
 Nella sezione *Pages* dell'editor, crea due pagine tramite il pulsante *Add Page* e apri la prima. Le proprietà principali delle pagine sono il numero di righe e il numero di colonne in cui verranno suddivise per formare una griglia in cui posizionare i widget.
 
@@ -73,7 +73,7 @@ Per aggiungere alla dashboard un'intestazione e i pulsanti di navigazione tra le
 - Grid Rows: `1`
 - Grid Columns: `4`
 
-Per aggiungere i pulsanti di navigazione occorre creare un apposito script HTML nel riquadro della proprietà *HTML Content*; lo script verrà compilato e aggiunto sotto il titolo del widget. Dato che l'installazione di Cyclotron include Bootstrap 3, si può usare per dare uno stile agli elementi HTML senza bisogno di importarlo nell'apposita sezione *Scripts*.
+Per aggiungere i pulsanti di navigazione occorre creare un apposito script HTML nel riquadro della proprietà *HTML Content*; lo script verrà compilato e aggiunto sotto il titolo del widget. Dato che l'installazione di Cyclotron include Bootstrap 3, si può usare per dare uno stile agli elementi HTML senza bisogno di importarlo.
 
 ```
 <div class="button-group" align="center">
@@ -92,5 +92,81 @@ Per aggiungere i pulsanti di navigazione occorre creare un apposito script HTML 
 ```
 
 Dopo aver salvato e cliccato sul pulsante *Preview*, potrai visualizzare la dashboard con il widget appena creato.
+
+### 3. Slider Temporale
+
+Crea nella stessa pagina un altro widget, assegnagli il tipo `Slider` e configuralo con le seguenti proprietà, per specificare l'intervallo di tempo e la scala di valori da visualizzare accanto allo slider:
+
+- Minimum date-time: `2020-02-24`
+- Maximum date-time: `#{dataDiOggi}`
+- Date-time Format: `YYYY-MM-DD`
+- Step: `1`
+- Pips.Mode: `count`
+- Pips.Values: `5`
+- Pips.Stepped: `true`
+- Grid Rows: `4`
+- Grid Columns: `1`
+- Orientation: `vertical`
+- Direction: `rtl` (right-to-left o da sotto a sopra)
+- Tooltips: `true`
+- Initial Handle Position: `#{dataDiOggi}`
+
+La stringa `#{dataDiOggi}` è un placeholder e indica che il valore da assegnare, in questo caso, alle proprietà *Maximum date-time* e *Initial Handle Position* corrisponde a quello del parametro **dataDiOggi**, che creerai tra poco. Cerca la proprietà *Subscription To Parameters*, clicca sul pulsante *Add Subscription to Parameters* e inserisci il nome del parametro, `dataDiOggi`. Quando il widget verrà caricato e ad ogni eventuale aggiornamento del parametro, il placeholder verrà sostituito con il valore attuale di **dataDiOggi**.
+
+Nella sezione *Parameters* dell'editor della dashboard, clicca il pulsante *Add Parameter* e assegna al nuovo parametro le seguenti proprietà:
+
+- Name: `dataDiOggi`
+- Default Value: `${moment().format('YYYY-MM-DD')}`
+- Show in URL: `false`
+
+Il valore di default sarà la data di oggi, nello stesso formato utilizzato dallo slider.
+
+Crea un altro parametro con le seguenti proprietà:
+
+- Name: `dataSelezionata`
+- Default Value: `${moment().format('YYYY-MM-DD')}`
+- Show in URL: `false`
+
+Il parametro **dataSelezionata** conterrà la data selezionata tramite lo slider e verrà utilizzato dagli altri componenti della dashboard per filtrare i dati. Inizialmente avrà come valore la data di oggi, ma si aggiornerà ogni volta che verrà selezionata una nuova data tramite lo slider.
+
+Per configurare la gestione della selezione di una data, torna sulla sezione dell'editor dedicata allo slider, cerca la proprietà *Specific Events*, clicca sul pulsante *Add param-event* e popola i seguenti campi:
+
+- Parameter Name: `dataSelezionata`
+- Event: `dateTimeChange`
+
+In questo modo, ad ogni evento "cambio data" il parametro cambierà valore. Puoi cliccare su *Preview* per visualizzare lo stato della dashboard.
+
+Adesso il documento JSON completo del widget slider dovrebbe essere questo:
+
+```
+{
+    "direction": "rtl",
+    "gridHeight": 4,
+    "gridWidth": 1,
+    "handlePosition": "#{dataDiOggi}",
+    "maxValue": "#{dataDiOggi}",
+    "minValue": "2020-02-24",
+    "momentFormat": "YYYY-MM-DD",
+    "orientation": "vertical",
+    "parameterSubscription": ["dataDiOggi"],
+    "pips": {
+        "mode": "count",
+        "stepped": true,
+        "values": "5"
+    },
+    "player": {},
+    "specificEvents": [{
+        "event": "dateTimeChange",
+        "paramName": "dataSelezionata"
+    }],
+    "step": 1,
+    "tooltips": true,
+    "widget": "slider"
+}
+```
+
+
+
+
 
 
