@@ -53,7 +53,44 @@ Questo è un esempio della configurazione iniziale della dashboard:
 }
 ```
 
-### 2. Creazione delle Sorgenti
+La dashboard di questo tutorial sarà composta da due pagine: la prima mostrerà la mappa dell'Italia e alcuni dati giornalieri a livello nazionale; selezionando una regione dalla mappa si potrà accedere alla seconda pagina per visualizzare i dati giornalieri a livello regionale. In entrambe le pagine, uno slider temporale permetterà di selezionare il giorno da analizzare.
 
+### 2. Intestazione e Slider Temporale
+
+Nella sezione *Pages* dell'editor, crea due pagine tramite il pulsante *Add Page* e apri la prima. Le proprietà principali delle pagine sono il numero di righe e il numero di colonne in cui verranno suddivise per formare una griglia in cui posizionare i widget.
+
+Alla prima pagina assegna le seguenti proprietà:
+
+- Name: `analisi-nazionale`
+- Grid Columns: `4`
+- Grid Rows: `5`
+
+Per aggiungere alla dashboard un'intestazione e i pulsanti di navigazione tra le pagine, crea un nuovo widget tramite il pulsante *Add Widget*, assegnagli il tipo `Header` e le seguenti proprietà:
+
+- Title: `Diffusione del Virus Covid-19 in Italia`
+- Show Title: `true`
+- Show Parameters: `false`
+- Grid Rows: `1`
+- Grid Columns: `4`
+
+Per aggiungere i pulsanti di navigazione occorre creare un apposito script HTML nel riquadro della proprietà *HTML Content*; lo script verrà compilato e aggiunto sotto il titolo del widget. Dato che l'installazione di Cyclotron include Bootstrap 3, si può usare per dare uno stile agli elementi HTML senza bisogno di importarlo nell'apposita sezione *Scripts*.
+
+```
+<div class="button-group" align="center">
+    <button class="btn btn-default" id="naz">Analisi Nazionale</button>
+    <button class="btn btn-default" id="reg">Analisi Regionale</button>
+</div>
+<script>
+    // La funzione goToPage(pageNum) permette di navigare alla pagina specificata
+    $('#naz').on('click', function () {
+        Cyclotron.goToPage(1);
+    });
+    $('#reg').on('click', function () {
+        Cyclotron.goToPage(2);
+    });
+</script>
+```
+
+Dopo aver salvato e cliccato sul pulsante *Preview*, potrai visualizzare la dashboard con il widget appena creato.
 
 
