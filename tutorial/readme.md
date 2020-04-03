@@ -196,13 +196,106 @@ e = function(dataset){
 }
 ```
 
-Ora che la datasource è pronta, torna alla pagina `analisi-nazionale` e crea un nuovo widget di tipo `Number` con le seguenti proprietà:
+Ora che la datasource è pronta, torna alla pagina `analisi-nazionale` e crea quattro nuovi widget di tipo `Number`, ognuno con le seguenti proprietà (puoi copiare il documento JSON del primo nell'editor JSON degli altri):
 
 - Data Source: `contatori-nazionali`
-- Orientation: `vertical`
-- Auto-Size Numbers: `false`
-- Grid Rows: `4`
+- Grid Rows: `1`
 - Grid Columns: `1`
+- No Data Message: `Dati non disponibili per la data scelta`
+
+Adesso tutti e quattro i widget leggeranno la stessa datasource, ma ognuno esporrà uno dei dati. La proprietà *Numbers* può essere usata per mostrare una serie di valori statici oppure provenienti dalla datasource (tramite la sintassi `#{campo_valore}`). Nel primo widget di tipo `Number`, cliccando sul pulsante *Add number*, crea un numero con le seguenti proprietà:
+
+- Number: `#{totale_casi}`
+- Prefix: `Totale Casi`
+
+Fai lo stesso per il secondo widget:
+
+- Number: `#{totale_positivi}`
+- Prefix: `Totale Positivi`
+
+Il terzo:
+
+- Number: `#{dimessi_guariti}`
+- Prefix: `Dimessi Guariti`
+
+E infine il quarto:
+
+- Number: `#{deceduti}`
+- Prefix: `Decessi`
+
+Se clicchi nuovamente su *Preview* e provi a cambiare la data selezionata con lo slider, vedrai che i quattro contatori si aggiorneranno con i dati relativi al giorno scelto o, nel caso questi non fossero disponibili, con il messaggio impostato.
+
+Al momento i quattro widget saranno disposti sulla dashboard da sinistra a destra, nell'ordine in cui sono elencati nella pagina. Nel prossimo passaggio verrà aggiunto l'ultimo widget della pagina e i contatori si incolonneranno per riempire lo spazio sulla griglia.
+
+### 5. Dati Geografici e Mappa Interattiva
+
+La mappa che stai per creare avrà i seguenti elementi:
+
+- layer OSM: mappa geografica di base
+- layer vettoriale con i confini regionali: ogni regione sarà rappresentata come una feature GeoJSON che, se selezionata con un click,
+- overlays: su ogni regione sarà rappresentato un cerchio di dimensione proporzionata al numero totale di casi registrati sul territorio
+
+Gli overlays saranno elaborati da una datasource e passati al widget OpenLayers.
+
+Crea una nuova datasource di tipo JSON con le seguenti proprietà:
+
+- Name: `casi-per-regione`
+- URL: `https://github.com/pcm-dpc/COVID-19/raw/master/dati-json/dpc-covid19-ita-regioni.json`
+- Subscription to Parameters: `dataSelezionata`
+- Post-Processor:
+
+```
+TODO
+```
+
+La funzione in *Post-Processor* seleziona nell'insieme di dati regionali quelli relativi alla data selezionata, dopodiché, per ciascuna regione, calcola la dimensione del cerchio che le verrà assegnato in base al numero totale di casi registrati e determina il posizionamento, l'elemento HTML con cui rappresentare l'overlay e la classe CSS da assegnargli. Quest'ultima dovrà essere definita nell'apposita sezione dell'editor.
+
+Nella sezione *Styles* dell'editor, clicca sul pulsante *Add Style* e assegna alla proprietà *CSS Text* la seguente classe CSS:
+
+```
+.regions {
+    opacity: .8;
+    border-radius: 50%;
+    line-height: 50px;
+    background-color: red;
+}
+```
+
+A questo punto, torna alla pagina `analisi-nazionale`, clicca su *Add Widget* e poi trascina il nuovo widget tra quello di tipo `Slider` e il primo di tipo `Number`, in modo che sia al terzo posto nell'elenco dei widget inclusi nella pagina. Assegna al nuovo widget le seguenti proprietà:
+
+- Widget Type: `OpenLayers Map`
+- Data Source: `casi-per-regione`
+- Center.X: `13`
+- Center.Y: `42`
+- Zoom: `5`
+- Grid Rows: `4`
+- Grid Columns: `2`
+
+Alla proprietà *Layers*, cliccando su *Add Layer* aggiungi due layers. Al primo, che sarà un layer di base in colori neutrali, assegna le seguenti proprietà:
+
+- Type: `tile`
+- Source.Name: `Stamen`
+- Source.Configuration:
+
+```
+{
+    "layer": "toner-lite"
+}
+```
+
+Il secondo layer sarà di tipo vettoriale e rappresenterà i confini regionali:
+
+- Type: `vector`
+- Source.Name: `Vector`
+- Source.Configuration:
+
+```
+{
+    "format": new ol.format.GeoJSON(),
+    "url": "https://gist.githubusercontent.com/datajournalism-it/48e29e7c87dca7eb1d29/raw/2636aeef92ba0770a073424853f37690064eb0ea/regioni.geojson"
+}
+```
+
 
 
 
