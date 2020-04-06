@@ -52,7 +52,7 @@ Questo è un esempio della configurazione iniziale della dashboard:
 }
 ```
 
-La dashboard di questo tutorial sarà composta da due pagine: la prima mostrerà la mappa dell'Italia e alcuni dati giornalieri a livello nazionale; selezionando una regione dalla mappa si potrà accedere alla seconda pagina per visualizzare i dati giornalieri a livello regionale. In entrambe le pagine, uno slider temporale permetterà di selezionare il giorno da analizzare.
+La dashboard di questo tutorial sarà composta da due pagine: la prima mostrerà la mappa dell'Italia e alcuni dati giornalieri generali, a livello nazionale oppure filtrati per regione tramite la selezione dalla mappa; la seconda permetterà un'analisi più dettagliata. In entrambe le pagine, uno slider temporale permetterà di selezionare il giorno da analizzare.
 
 ### 2. Intestazione
 
@@ -60,7 +60,7 @@ Nella sezione *Pages* dell'editor, crea due pagine tramite il pulsante *Add Page
 
 Alla prima pagina assegna le seguenti proprietà:
 
-- Name: `analisi-nazionale`
+- Name: `analisi-generale`
 - Grid Columns: `4`
 - Grid Rows: `5`
 
@@ -76,15 +76,15 @@ Per aggiungere i pulsanti di navigazione occorre creare un apposito script HTML 
 
 ```
 <div class="button-group" align="center">
-    <button class="btn btn-default" id="naz">Analisi Nazionale</button>
-    <button class="btn btn-default" id="reg">Analisi Regionale</button>
+    <button class="btn btn-default" id="gen">Analisi Generale</button>
+    <button class="btn btn-default" id="det">dettaglio</button>
 </div>
 <script>
     // La funzione goToPage(pageNum) permette di navigare alla pagina specificata
-    $('#naz').on('click', function () {
+    $('#gen').on('click', function () {
         Cyclotron.goToPage(1);
     });
-    $('#reg').on('click', function () {
+    $('#det').on('click', function () {
         Cyclotron.goToPage(2);
     });
 </script>
@@ -128,6 +128,11 @@ Crea un altro parametro con le seguenti proprietà:
 
 Il parametro **dataSelezionata** conterrà la data selezionata tramite lo slider e verrà utilizzato dagli altri componenti della dashboard per filtrare i dati. Inizialmente avrà come valore la data di oggi, ma si aggiornerà ogni volta che verrà selezionata una nuova data tramite lo slider.
 
+Crea anche un ultimo parametro, configurato come segue, che servirà per la selezione di una regione in mappa:
+
+- Name: `regioneSelezionata`
+- Show in URL: `false`
+
 Per configurare la gestione della selezione di una data, torna sulla sezione dell'editor dedicata allo slider, cerca la proprietà *Specific Events*, clicca sul pulsante *Add param-event* e popola i seguenti campi:
 
 - Parameter Name: `dataSelezionata`
@@ -166,38 +171,67 @@ Adesso il documento JSON completo del widget slider dovrebbe essere questo:
 
 ### 4. Contatori
 
-Il file JSON https://github.com/pcm-dpc/COVID-19/blob/master/dati-json/dpc-covid19-ita-andamento-nazionale.json contiene i dati sul numero di contagi, ricoveri, decessi, tamponi registrati giorno per giorno a livello nazionale. Questi dati possono essere analizzati sulla dashboard tramite la configurazione di una datasource, che li recupererà e rielaborerà per la visualizzazione in un widget.
+Il file JSON https://github.com/pcm-dpc/COVID-19/blob/master/dati-json/dpc-covid19-ita-andamento-nazionale.json contiene i dati sul numero di contagi, ricoveri, decessi, tamponi registrati giorno per giorno a livello nazionale, mentre il file https://github.com/pcm-dpc/COVID-19/blob/master/dati-json/dpc-covid19-ita-regioni.json contiene i medesimi dati per ciascuna regione. Questi dati possono essere analizzati sulla dashboard tramite la configurazione di alcune datasource, che li recupereranno e rielaboreranno per la visualizzazione in un widget.
 
-Nella sezione *Data Sources* dell'editor, clicca sul pulsante *Add Data source* per creare una nuova datasource di tipo `JSON` e assegnale le seguenti proprietà:
+Nella sezione *Data Sources* dell'editor, clicca sul pulsante *Add Data source* per creare una nuova datasource di tipo `JSON` e assegnale le seguenti proprietà per richiedere i dati nazionali:
 
-- Name: `contatori-nazionali`
-- URL: `https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-json/dpc-covid19-ita-andamento-nazionale.json`
-- Subscription To Parameters: `dataSelezionata`
+- Name: `dati-nazionali`
+- URL: `https://github.com/pcm-dpc/COVID-19/raw/master/dati-json/dpc-covid19-ita-andamento-nazionale.json`
+- Preload: `true`
+- Deferred: `true`
 
-La datasource si aggiornerà ogni volta che il parametro **dataSelezionata** avrà un nuovo valore, il quale verrà usato per filtrare tra i dati solo quelli relativi alla data selezionata. La proprietà *Post-Processor*, quando specificata, è una funzione JavaScript che riceve in input il dataset ottenuto dalla chiamata all'URL (che in questo esempio è un'array di giorni con i relativi dati) e può modificarlo prima che venga restituito come risultato della datasource. In questo caso, la funzione dovrà trovare nell'array di giorni quello corrispondente alla data selezionata e preparare i dati per il widget che li riceverà.
+Crea una seconda datasource di tipo `JSON` per richiedere i dati regionali:
 
-Configura la proprietà *Post-Processor* come segue:
+- Name: `dati-regionali`
+- URL: `https://github.com/pcm-dpc/COVID-19/raw/master/dati-json/dpc-covid19-ita-regioni.json`
+- Preload: `true`
+- Deferred: `true`
+
+Infine crea una terza datasource, di tipo `JavaScript`, con le seguenti proprietà:
+
+- Name: `contatori-generali`
+- Subscription To Parameters: `dataSelezionata`, `regioneSelezionata`
+- Processor:
 
 ```
-e = function(dataset){
+e = function(promise){
     var result = [];
-    var day = Cyclotron.parameters.dataSelezionata; //accesso al parametro
+    var day = Cyclotron.parameters.dataSelezionata;
+    var region = Cyclotron.parameters.regioneSelezionata;
     
-    var dayData = _.find(dataset, function(d){
-        return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');
-    });
-    
-    if(dayData){
-        result.push(dayData);
+    if(region && region.Regione){
+        Cyclotron.dataSources['dati-regionali'].execute().then(function(dataset){
+            var dayData = _.find(dataset['0'].data, function(d){
+                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day') && d.denominazione_regione.includes(region.Regione);
+            });
+            
+            if(dayData){
+                result.push(dayData);
+            }
+            
+            promise.resolve(result);
+        });
+    } else {
+        Cyclotron.dataSources['dati-nazionali'].execute().then(function(dataset){
+            var dayData = _.find(dataset['0'].data, function(d){
+                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');
+            });
+            
+            if(dayData){
+                result.push(dayData);
+            }
+            
+            promise.resolve(result);
+        });
     }
-    
-    return result;
 }
 ```
 
-Ora che la datasource è pronta, torna alla pagina `analisi-nazionale` e crea quattro nuovi widget di tipo `Number`, ognuno con le seguenti proprietà (puoi copiare il documento JSON del primo nell'editor JSON degli altri):
+La datasource si aggiornerà ogni volta che i parametri **dataSelezionata** o **regioneSelezionata** avranno un nuovo valore, il quale verrà usato per filtrare tra i dati solo quelli relativi alla data e/o alla regione selezionata. La proprietà *Processor* è una funzione JavaScript che verifica quali filtri sono stati impostati, elabora i dati e li restituisce in maniera sincrona. A seconda che sia o non sia presente una regione selezionata, la funzione esegue la datasource per i dati nazionali o regionali, cerca nel dataset (che in entrambi i casi è un'array di giorni con i relativi dati) il sottoinsieme corrispondente alla data e/o regione selezionata e preparare i dati per il widget che li riceverà.
 
-- Data Source: `contatori-nazionali`
+Ora che il recupero dei dati è stato predisposto, torna alla pagina `analisi-generale` e crea quattro nuovi widget di tipo `Number`, ognuno con le seguenti proprietà (puoi copiare il documento JSON del primo nell'editor JSON degli altri):
+
+- Data Source: `contatori-generali`
 - Grid Rows: `1`
 - Grid Columns: `1`
 - No Data Message: `Dati non disponibili per la data scelta`
@@ -222,7 +256,7 @@ E infine il quarto:
 - Number: `#{deceduti}`
 - Prefix: `Decessi`
 
-Se clicchi nuovamente su *Preview* e provi a cambiare la data selezionata con lo slider, vedrai che i quattro contatori si aggiorneranno con i dati relativi al giorno scelto o, nel caso questi non fossero disponibili, con il messaggio impostato.
+Se clicchi nuovamente su *Preview* e provi a cambiare la data selezionata con lo slider, vedrai che i quattro contatori si aggiorneranno con i dati relativi al giorno scelto o, nel caso questi non fossero disponibili, con il messaggio impostato. Quando la mappa sarà configurata, i contatori si aggiorneranno anche in risposta alla selezione di una regione.
 
 Al momento i quattro widget saranno disposti sulla dashboard da sinistra a destra, nell'ordine in cui sono elencati nella pagina. Nel prossimo passaggio verrà aggiunto l'ultimo widget della pagina e i contatori si incolonneranno per riempire lo spazio sulla griglia.
 
@@ -232,7 +266,106 @@ La mappa che stai per creare avrà i seguenti elementi:
 
 - layer OSM: mappa geografica di base
 - layer vettoriale con i confini regionali: ogni regione sarà rappresentata come una feature GeoJSON che, se selezionata con un click, permetterà di procedere con l'analisi dei dati regionali nella seconda pagina della dashboard
+
+Torna alla pagina `analisi-generale`, clicca su *Add Widget* e poi trascina il nuovo widget tra quello di tipo `Slider` e il primo di tipo `Number`, in modo che sia al terzo posto nell'elenco dei widget inclusi nella pagina. Assegna al nuovo widget le seguenti proprietà:
+
+- Widget Type: `OpenLayers Map`
+- Center.X: `13`
+- Center.Y: `42`
+- Zoom: `5`
+- Grid Rows: `4`
+- Grid Columns: `2`
+
+Alla proprietà *Layers*, cliccando su *Add Layer* aggiungi due layers. Al primo, che sarà un layer di base in colori neutrali, assegna le seguenti proprietà:
+
+- Type: `tile`
+- Source.Name: `Stamen`
+- Source.Configuration:
+
+```
+{
+    "layer": "toner-lite"
+}
+```
+
+Il secondo layer sarà di tipo vettoriale e rappresenterà i confini regionali:
+
+- Type: `vector`
+- Source.Name: `Vector`
+- Source.Configuration:
+
+```
+{
+    "format": new ol.format.GeoJSON(),
+    "url": "https://gist.githubusercontent.com/datajournalism-it/f1abb68e718b54f6a0fe/raw/23636ff76534439b52b87a67e766b11fa7373aa9/regioni-con-trento-bolzano.geojson"
+}
+```
+
+A questo punto, salvando e aprendo il preview della dashboard, sarà già visibile la mappa con i confini regionali, senza però che le regioni siano selezionabili. Per completare la configurazione, torna al layer vettoriale appena creato e assegna alla proprietà *Style function* il seguente valore, per dare uno stile alle features rappresentate in mappa:
+
+```
+e = function(feature) {
+    var styles = {
+        'desel': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: '#3399CC',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255, 255, 255, 0.3)'
+            })
+        }),
+        'sel': new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: '#3399CC',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(51, 153, 204, 0.5)'
+            })
+        })
+    };
+    
+    if(Cyclotron.parameters.regioneSelezionata && Cyclotron.parameters.regioneSelezionata.Regione == feature.getProperties().Regione){
+        return styles.sel;
+    } else {
+        return styles.desel;
+    }
+}
+```
+
+Individua tra le proprietà della mappa quella denominata *Specific Events*, clicca sul pulsante *Add param-event* e configura l'evento come segue:
+
+- Parameter Name: `regioneSelezionata`
+- Event: `selectVectorFeature`
+
+Infine, nella sezione *Scripts*, crea un nuovo script con le seguenti proprietà:
+
+- Single-Load: `true`
+- JavaScript Text: 
+
+```
+Cyclotron.featureSelectStyleFunction = function(feature){
+    return new ol.style.Style({
+        stroke: new ol.style.Stroke({color: '#3399CC', width: 2}),
+        fill: new ol.style.Fill({color: 'rgba(51, 153, 204, 0.5)'})
+    });
+}
+```
+
+La funzione appena definita verrà utilizzata per assegnare uno stile alle features selezionate. Adesso la prima pagina della dashboard è completa.
+
+
+
+
+
+
 ---------------------------------------------------------
+
+La mappa che stai per creare avrà i seguenti elementi:
+
+- layer OSM: mappa geografica di base
+- layer vettoriale con i confini regionali: ogni regione sarà rappresentata come una feature GeoJSON che, se selezionata con un click, permetterà di procedere con l'analisi dei dati regionali nella seconda pagina della dashboard
 - overlays: su ogni regione sarà rappresentato un cerchio di dimensione proporzionata al numero totale di casi registrati sul territorio
 
 Gli overlays saranno elaborati da una datasource e passati al widget OpenLayers.
@@ -263,7 +396,7 @@ Nella sezione *Styles* dell'editor, clicca sul pulsante *Add Style* e assegna al
 }
 ```
 
-A questo punto, torna alla pagina `analisi-nazionale`, clicca su *Add Widget* e poi trascina il nuovo widget tra quello di tipo `Slider` e il primo di tipo `Number`, in modo che sia al terzo posto nell'elenco dei widget inclusi nella pagina. Assegna al nuovo widget le seguenti proprietà:
+A questo punto, torna alla pagina `analisi-generale`, clicca su *Add Widget* e poi trascina il nuovo widget tra quello di tipo `Slider` e il primo di tipo `Number`, in modo che sia al terzo posto nell'elenco dei widget inclusi nella pagina. Assegna al nuovo widget le seguenti proprietà:
 
 - Widget Type: `OpenLayers Map`
 - Data Source: `casi-per-regione`
@@ -309,14 +442,3 @@ Affiché il widget interpreti correttamente i dati provenienti dalla datasource,
 - Template Field: `htmlContent`
 
 A questo punto, aprendo il preview della dashboard, sarà già visibile la mappa con i confini regionali e i cerchi rossi indicheranno proporzionalmente il numero di contagi rilevati per ciascuna regione in una specifica data. L'ultimo passaggio per concludere la prima pagina è l'implementazione della selezione di una regione dalla mappa.
-
------------------------------------------------------------
-
-
-
-
-
-
-- cliccabilità features
-
-
