@@ -32,7 +32,6 @@ Questo tutorial illustra come creare con Cyclotron una dashboard che includerà 
 I dati utilizzati si riferiscono alla diffusione del virus Covid-19 in Italia e sono resi disponibili dalla Protezione Civile sulla seguente repository: https://github.com/pcm-dpc/COVID-19. Le altre fonti dati utilizzate sono:
 
 - confini amministrativi delle regioni italiane, forniti da https://gist.github.com/datajournalism-it
-- 
 
 ### 1. Creazione di una Nuova Dashboard
 
@@ -233,6 +232,7 @@ La mappa che stai per creare avrà i seguenti elementi:
 
 - layer OSM: mappa geografica di base
 - layer vettoriale con i confini regionali: ogni regione sarà rappresentata come una feature GeoJSON che, se selezionata con un click, permetterà di procedere con l'analisi dei dati regionali nella seconda pagina della dashboard
+---------------------------------------------------------
 - overlays: su ogni regione sarà rappresentato un cerchio di dimensione proporzionata al numero totale di casi registrati sul territorio
 
 Gli overlays saranno elaborati da una datasource e passati al widget OpenLayers.
@@ -294,19 +294,25 @@ Il secondo layer sarà di tipo vettoriale e rappresenterà i confini regionali:
 ```
 {
     "format": new ol.format.GeoJSON(),
-    "url": "https://gist.githubusercontent.com/datajournalism-it/48e29e7c87dca7eb1d29/raw/2636aeef92ba0770a073424853f37690064eb0ea/regioni.geojson"
+    "url": "https://gist.githubusercontent.com/datajournalism-it/f1abb68e718b54f6a0fe/raw/23636ff76534439b52b87a67e766b11fa7373aa9/regioni-con-trento-bolzano.geojson"
 }
 ```
 
 Affiché il widget interpreti correttamente i dati provenienti dalla datasource, occorre configurare la proprietà `DataSource Mapping` come segue, specificando quindi quali campi nel risultato prodotto dalla datasource contengano determinate informazioni:
 
-- Identifier Field: id
-- Overlay List Field: regions
-- CSS Class Field: cssClass
-- Overlay Identifier Field: denominazione_regione
-- Position Field: coordinates
-- Positioning Field: positioning
-- Template Field: htmlContent
+- Identifier Field: `id`
+- Overlay List Field: `regions`
+- CSS Class Field: `cssClass`
+- Overlay Identifier Field: `denominazione_regione`
+- Position Field: `coordinates`
+- Positioning Field: `positioning`
+- Template Field: `htmlContent`
+
+A questo punto, aprendo il preview della dashboard, sarà già visibile la mappa con i confini regionali e i cerchi rossi indicheranno proporzionalmente il numero di contagi rilevati per ciascuna regione in una specifica data. L'ultimo passaggio per concludere la prima pagina è l'implementazione della selezione di una regione dalla mappa.
+
+-----------------------------------------------------------
+
+
 
 
 
