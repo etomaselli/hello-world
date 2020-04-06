@@ -275,6 +275,7 @@ Torna alla pagina `analisi-generale`, clicca su *Add Widget* e poi trascina il n
 - Zoom: `5`
 - Grid Rows: `4`
 - Grid Columns: `2`
+- Controls: `Zoom`
 
 Alla proprietà *Layers*, cliccando su *Add Layer* aggiungi due layers. Al primo, che sarà un layer di base in colori neutrali, assegna le seguenti proprietà:
 
