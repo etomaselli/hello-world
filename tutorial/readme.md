@@ -232,10 +232,12 @@ Al momento i quattro widget saranno disposti sulla dashboard da sinistra a destr
 La mappa che stai per creare avrà i seguenti elementi:
 
 - layer OSM: mappa geografica di base
-- layer vettoriale con i confini regionali: ogni regione sarà rappresentata come una feature GeoJSON che, se selezionata con un click,
+- layer vettoriale con i confini regionali: ogni regione sarà rappresentata come una feature GeoJSON che, se selezionata con un click, permetterà di procedere con l'analisi dei dati regionali nella seconda pagina della dashboard
 - overlays: su ogni regione sarà rappresentato un cerchio di dimensione proporzionata al numero totale di casi registrati sul territorio
 
 Gli overlays saranno elaborati da una datasource e passati al widget OpenLayers.
+
+Il file https://github.com/pcm-dpc/COVID-19/blob/master/dati-json/dpc-covid19-ita-regioni.json contiene i dati sul numero di contagi, ricoveri, decessi, tamponi registrati giorno per giorno per ogni regione, completi delle coordinate geografiche necessarie per geolocalizzarli.
 
 Crea una nuova datasource di tipo JSON con le seguenti proprietà:
 
@@ -245,7 +247,7 @@ Crea una nuova datasource di tipo JSON con le seguenti proprietà:
 - Post-Processor:
 
 ```
-TODO
+!!! TODO !!! ispezione overlays, non spariscono quando la datasource si svuota
 ```
 
 La funzione in *Post-Processor* seleziona nell'insieme di dati regionali quelli relativi alla data selezionata, dopodiché, per ciascuna regione, calcola la dimensione del cerchio che le verrà assegnato in base al numero totale di casi registrati e determina il posizionamento, l'elemento HTML con cui rappresentare l'overlay e la classe CSS da assegnargli. Quest'ultima dovrà essere definita nell'apposita sezione dell'editor.
@@ -296,9 +298,19 @@ Il secondo layer sarà di tipo vettoriale e rappresenterà i confini regionali:
 }
 ```
 
+Affiché il widget interpreti correttamente i dati provenienti dalla datasource, occorre configurare la proprietà `DataSource Mapping` come segue, specificando quindi quali campi nel risultato prodotto dalla datasource contengano determinate informazioni:
+
+- Identifier Field: id
+- Overlay List Field: regions
+- CSS Class Field: cssClass
+- Overlay Identifier Field: denominazione_regione
+- Position Field: coordinates
+- Positioning Field: positioning
+- Template Field: htmlContent
 
 
 
 
+- cliccabilità features
 
 
