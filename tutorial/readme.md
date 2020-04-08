@@ -24,7 +24,7 @@ DATI OPEN:
 
 Questo tutorial illustra come creare con Cyclotron una dashboard che includerà le seguenti features:
 - fonti dati JSON
-- fonti dati OData ?
+- fonti dati OData
 - elaborazione di fonti dati diverse tramite JavaScript
 - dati geospaziali e geoJSON su mappa interattiva
 - criptazione di dati sensibili nella configurazione.
@@ -32,6 +32,7 @@ Questo tutorial illustra come creare con Cyclotron una dashboard che includerà 
 I dati utilizzati si riferiscono alla diffusione del virus Covid-19 in Italia e sono resi disponibili dalla Protezione Civile sulla seguente repository: https://github.com/pcm-dpc/COVID-19. Le altre fonti dati utilizzate sono:
 
 - confini amministrativi delle regioni italiane, forniti da https://gist.github.com/datajournalism-it
+- popolazione residente per regione, rilevata dal censimento ISTAT 2011 ed esposta sul portale DatiOpen.it, http://www.datiopen.it/it/opendata/Censimento_2011_Popolazione_per_regione_e_sesso
 
 ### 1. Creazione di una Nuova Dashboard
 
@@ -108,9 +109,9 @@ Crea nella stessa pagina un altro widget, assegnagli il tipo `Slider` e configur
 - Orientation: `vertical`
 - Direction: `rtl` (right-to-left o da sotto a sopra)
 - Tooltips: `true`
-- Initial Handle Position: `#{dataDiOggi}`
+- Initial Handle Position: `#{dataSelezionata}`
 
-La stringa `#{dataDiOggi}` è un placeholder e indica che il valore da assegnare, in questo caso, alle proprietà *Maximum date-time* e *Initial Handle Position* corrisponde a quello del parametro **dataDiOggi**, che creerai tra poco. Cerca la proprietà *Subscription To Parameters*, clicca sul pulsante *Add Subscription to Parameters* e inserisci il nome del parametro, `dataDiOggi`. Quando il widget verrà caricato e ad ogni eventuale aggiornamento del parametro, il placeholder verrà sostituito con il valore attuale di **dataDiOggi**.
+La stringa `#{dataDiOggi}` è un placeholder e indica che il valore da assegnare, per esempio, alla proprietà *Maximum date-time* corrisponde a quello del parametro **dataDiOggi**, che creerai tra poco. Cerca la proprietà *Subscription To Parameters*, clicca sul pulsante *Add Subscription to Parameters* e inserisci il nome del parametro, `dataDiOggi`. Quando il widget verrà caricato e ad ogni eventuale aggiornamento del parametro, il placeholder verrà sostituito con il valore attuale di **dataDiOggi**.
 
 Nella sezione *Parameters* dell'editor della dashboard, clicca il pulsante *Add Parameter* e assegna al nuovo parametro le seguenti proprietà:
 
@@ -147,7 +148,7 @@ Adesso il documento JSON completo del widget slider dovrebbe essere questo:
     "direction": "rtl",
     "gridHeight": 4,
     "gridWidth": 1,
-    "handlePosition": "#{dataDiOggi}",
+    "handlePosition": "#{dataSelezionata}",
     "maxValue": "#{dataDiOggi}",
     "minValue": "2020-02-24",
     "momentFormat": "YYYY-MM-DD",
@@ -198,32 +199,23 @@ e = function(promise){
     var result = [];
     var day = Cyclotron.parameters.dataSelezionata;
     var region = Cyclotron.parameters.regioneSelezionata;
+    var datasource = (region && region.Regione ? 'dati-regionali' : 'dati-nazionali');
     
-    if(region && region.Regione){
-        Cyclotron.dataSources['dati-regionali'].execute().then(function(dataset){
-            var dayData = _.find(dataset['0'].data, function(d){
+    Cyclotron.dataSources[datasource].execute().then(function(dataset){
+        var dayData = _.find(dataset['0'].data, function(d){
+            if(region && region.Regione){
                 return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day') && d.denominazione_regione.includes(region.Regione);
-            });
-            
-            if(dayData){
-                result.push(dayData);
-            }
-            
-            promise.resolve(result);
-        });
-    } else {
-        Cyclotron.dataSources['dati-nazionali'].execute().then(function(dataset){
-            var dayData = _.find(dataset['0'].data, function(d){
+            } else {
                 return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');
-            });
-            
-            if(dayData){
-                result.push(dayData);
             }
-            
-            promise.resolve(result);
         });
-    }
+        
+        if(dayData){
+            result.push(dayData);
+        }
+        
+        promise.resolve(result);
+    });
 }
 ```
 
@@ -355,6 +347,179 @@ Cyclotron.featureSelectStyleFunction = function(feature){
 ```
 
 La funzione appena definita verrà utilizzata per assegnare uno stile alle features selezionate. Adesso la prima pagina della dashboard è completa.
+
+### 6. Linked Widget
+
+I widget di tipo `Linked Widget` sono sostanzialmente una copia di un altro widget, ovvero l'equivalente del copiare il documento JSON da un widget ad un altro. Permettono di configurare in un unico posto un widget che verrà riutilizzato in più parti della stessa dashboard. In questo caso, due widget configurati nella prima pagina della dashboard saranno riutilizzati nella seconda: l'intestazione e lo slider temporale.
+
+Vai alla sezione dell'editor dedicata alla seconda pagina e configurala come segue:
+
+- Name: `dettaglio`
+- Grid Columns: `4`
+- Grid Rows: `5`
+
+Crea due nuovo widget di tipo `Linked Widget`. Configura il primo con le seguenti proprietà:
+
+- Linked Widget: `Page 1: Header: Diffusione del Virus Covid-19 in Italia` (identificato nel documento JSON come `0,0`, cioè *<indice_pagina,indice_widget>*)
+- Name: `intestazione`
+- Grid Rows: `1`
+- Grid Columns: `4`
+
+E il secondo:
+
+- Linked Widget: `Page 1: Slider` (identificato nel documento JSON come `0,1`)
+- Name: `slider`
+- Grid Rows: `4`
+- Grid Columns: `1`
+
+Oltre a questi, la seconda pagina conterrà altri quattro widget di dettaglio sulla regione (se selezionata) o sulla nazione:
+
+- una tabella con dati relativi al numero di tamponi effettuati, pazienti ricoverati e in isolamento domiciliare
+- un grafico a barre con i casi rilevati per ogni provincia della regione (o per ogni regione d'Italia)
+- un grafico a torta con il numero di casi in confronto al numero di abitanti rilevato all'ultimo censimento ISTAT
+- un grafico a linee con i nuovi casi positivi giorno per giorno fino alla data scelta
+
+### 7. Tabella
+
+I dati per la tabella fanno parte del dataset che hai già utilizzato per i contatori della prima pagina e, allo stesso modo, vanno rielaborati in una nuova datasource di tipo `JavaScript`. Creane una con le seguenti proprietà:
+
+- Name: `dati-sanitari`
+- Subscription To Parameters: `dataSelezionata`, `regioneSelezionata`
+- Processor:
+
+```
+e = function(promise){
+    var result = [];
+    var day = Cyclotron.parameters.dataSelezionata;
+    var region = Cyclotron.parameters.regioneSelezionata;
+    var datasource = (region && region.Regione ? 'dati-regionali' : 'dati-nazionali');
+    
+    Cyclotron.dataSources[datasource].execute().then(function(dataset){
+        var dayData = _.find(dataset['0'].data, function(d){
+            if(region && region.Regione){
+                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day') && d.denominazione_regione.includes(region.Regione);
+            } else {
+                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');
+            }
+        });
+        
+        if(dayData){
+            result = [{
+                dato: 'Ricoverati con sintomi',
+                valore: dayData.ricoverati_con_sintomi
+            },{
+                dato: 'Terapia intensiva',
+                valore: dayData.terapia_intensiva
+            },{
+                dato: 'Totale ospedalizzati',
+                valore: dayData.totale_ospedalizzati
+            },{
+                dato: 'Isolamento domiciliare',
+                valore: dayData.isolamento_domiciliare
+            },{
+                dato: 'Tamponi',
+                valore: dayData.tamponi
+            }];
+        }
+        
+        promise.resolve(result);
+    });
+}
+```
+
+La funzione è molto simile a quella della datasource `contatori-generali`, ma l'output è adattato a quello richiesto dalla tabella, ovvero una lista di righe aventi ognuna due colonne, *dato* e *valore*.
+
+Crea un nuovo widget di tipo `Table` nella pagina `dettaglio` e configuralo come segue:
+
+- Name: `table`
+- Title: `Dati Sanitari - ${Cyclotron.parameters.region && Cyclotron.parameters.region.Regione ? Cyclotron.parameters.region.Regione : 'Italia'}`
+- Data Source: `dati-sanitari`
+- Omit Headers: `true`
+- Grid Rows: `2`
+- Grid Columns: `1`
+
+Il titolo contiene del codice JavaScript inline, indicato dalla notazione `${}`. In questo caso, il codice aggiunge al titolo del widget il nome della regione selezionata, se presente, oppure la stringa `Italia`.
+
+Alla proprietà *Columns*, aggiungi due colonne e, nel campo *Name*, inserisci `dato` per la prima, `valore` per la seconda, ovvero i nomi assegnati alle colonne nel processore della datasource.
+
+### 8. Grafico a Barre
+
+Per creare il grafico a barre, è necessario configurare una nuova datasource di tipo `JSON` che legga i dati a livello provinciale, contenuti nel file https://github.com/pcm-dpc/COVID-19/blob/master/dati-json/dpc-covid19-ita-province.json.
+
+Crea una datasource `JSON` con le seguenti proprietà:
+
+- Name: `dati-provinciali`
+- URL: `https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-json/dpc-covid19-ita-province.json`
+- Preload: `true`
+- Deferred: `true`
+
+E un'altra di tipo `JavaScript`, simile a quelle create in precedenza, che elaborerà i dati provinciali per la regione selezionata oppure regionali per tutta la nazione:
+
+- Name: `suddivisione-casi`
+- Subscription To Parameters: `dataSelezionata`, `regioneSelezionata`
+- Processor:
+
+```
+e = function(promise){
+    var result = [];
+    var day = Cyclotron.parameters.dataSelezionata;
+    var region = Cyclotron.parameters.regioneSelezionata;
+    var datasource = (region && region.Regione ? 'dati-provinciali' : 'dati-regionali');
+    
+    Cyclotron.dataSources[datasource].execute().then(function(dataset){
+        var dayData = _.filter(dataset['0'].data, function(d){
+            if(region && region.Regione){
+                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day') && d.denominazione_regione.includes(region.Regione);
+            } else {
+                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');
+            }
+        });
+        
+        _.each(dayData, function(zona){
+            result.push({
+                'Zona': (region && region.Regione ? zona.denominazione_provincia : zona.denominazione_regione),
+                'Casi Totali': zona.totale_casi
+            });
+        });
+        
+        promise.resolve(result);
+    });
+}
+```
+
+Il grafico avrà sull'asse orizzontale i nomi delle province o delle regioni. Nella pagina `dettaglio` crea un widget di tipo `Google Charts` con la seguente configurazione:
+
+- Name: `barchart`
+- Title: `Casi Totali per ${Cyclotron.parameters.region && Cyclotron.parameters.region.Regione ? 'Provincia' : 'Regione'}`
+- Data Source: `suddivisione-casi`
+- Chart Type: `ColumnChart`
+- Grid Rows: `2`
+- Grid Columns: `2`
+- Options:
+
+```
+{
+    "legend": "none",
+    "chartArea": {
+        "height": "50%",
+        "left": "7%",
+        "top": 19,
+        "width": "90%"
+    },
+    "hAxis": {
+        "showTextEvery": 1,
+        "slantedText": "true"
+    }
+}
+```
+
+Questo è un esempio di alcune delle opzioni con cui è possibile personalizzare il grafico. La lista completa è disponibile nella documentazione della libreria Google Charts.
+
+### 9. Grafico a Torta e Fonte OData
+
+### 10. Grafico a Linee
+
+
 
 
 
