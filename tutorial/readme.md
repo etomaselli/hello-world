@@ -12,11 +12,13 @@ DATI OPEN:
 - ITALIA:
 	- Dati Aperti della PA (anche formato OData): https://www.dati.gov.it/
 	- Dati geo della PA: https://geodati.gov.it/geoportale/
-	- datahub.io: https://datahub.io/
+	- datahub.io (anche geoJSON): https://datahub.io/
 	- DatiOpen.it (poco aggiornato): http://www.datiopen.it/
 	- Open Data Hub Italia: https://www.sciamlab.com/opendatahub/dataset
+- DASHBOARD:
+	- http://opendatadpc.maps.arcgis.com/apps/opsdashboard/index.html#/b0c68bce2cce478eaac82fe38d4138b1
+	- https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6
 
-!! fonti OData: OMS, DatiOpen.it, dati locali (regionali/comunali)
 
 - Le datasources di tipo JSON possono prendere dati sia da un servizio web (API) sia da un file (es. Github raw json files)
 
@@ -376,10 +378,10 @@ Oltre a questi, la seconda pagina conterrà altri quattro widget di dettaglio su
 
 - una tabella con dati relativi al numero di tamponi effettuati, pazienti ricoverati e in isolamento domiciliare
 - un grafico a barre con i casi rilevati per ogni provincia della regione (o per ogni regione d'Italia)
-- un grafico a torta con il numero di casi in confronto al numero di abitanti rilevato all'ultimo censimento ISTAT
+- una tabella con il numero di casi per milione di abitanti, considerato il numero di abitanti rilevato all'ultimo censimento ISTAT
 - un grafico a linee con i nuovi casi positivi giorno per giorno fino alla data scelta
 
-### 7. Tabella
+### 7. Tabella dei Dati Sanitari
 
 I dati per la tabella fanno parte del dataset che hai già utilizzato per i contatori della prima pagina e, allo stesso modo, vanno rielaborati in una nuova datasource di tipo `JavaScript`. Creane una con le seguenti proprietà:
 
@@ -432,7 +434,7 @@ La funzione è molto simile a quella della datasource `contatori-generali`, ma l
 Crea un nuovo widget di tipo `Table` nella pagina `dettaglio` e configuralo come segue:
 
 - Name: `table`
-- Title: `Dati Sanitari - ${Cyclotron.parameters.region && Cyclotron.parameters.region.Regione ? Cyclotron.parameters.region.Regione : 'Italia'}`
+- Title: `Dati Sanitari - ${Cyclotron.parameters.regioneSelezionata && Cyclotron.parameters.regioneSelezionata.Regione ? Cyclotron.parameters.regioneSelezionata.Regione : 'Italia'}`
 - Data Source: `dati-sanitari`
 - Omit Headers: `true`
 - Grid Rows: `2`
@@ -490,7 +492,7 @@ e = function(promise){
 Il grafico avrà sull'asse orizzontale i nomi delle province o delle regioni. Nella pagina `dettaglio` crea un widget di tipo `Google Charts` con la seguente configurazione:
 
 - Name: `barchart`
-- Title: `Casi Totali per ${Cyclotron.parameters.region && Cyclotron.parameters.region.Regione ? 'Provincia' : 'Regione'}`
+- Title: `Casi Totali per ${Cyclotron.parameters.regioneSelezionata && Cyclotron.parameters.regioneSelezionata.Regione ? 'Provincia' : 'Regione'}`
 - Data Source: `suddivisione-casi`
 - Chart Type: `ColumnChart`
 - Grid Rows: `2`
@@ -515,96 +517,153 @@ Il grafico avrà sull'asse orizzontale i nomi delle province o delle regioni. Ne
 
 Questo è un esempio di alcune delle opzioni con cui è possibile personalizzare il grafico. La lista completa è disponibile nella documentazione della libreria Google Charts.
 
-### 9. Grafico a Torta e Fonte OData
+### 9. Tabella di Confronto con la Popolazione e Fonte OData
 
-### 10. Grafico a Linee
+Anche per il prossimo widget servirà una nuova datasource, questa volta di tipo `OData`, poiché il portale DatiOpen.it mette a disposizione tramite il proprio servizio OData i dati sulla popolazione residente raccolti da ISTAT durante il censimento del 2011.
 
+Crea una datasource `OData` con le seguenti proprietà:
 
-
-
-
-
-
-
----------------------------------------------------------
-
-La mappa che stai per creare avrà i seguenti elementi:
-
-- layer OSM: mappa geografica di base
-- layer vettoriale con i confini regionali: ogni regione sarà rappresentata come una feature GeoJSON che, se selezionata con un click, permetterà di procedere con l'analisi dei dati regionali nella seconda pagina della dashboard
-- overlays: su ogni regione sarà rappresentato un cerchio di dimensione proporzionata al numero totale di casi registrati sul territorio
-
-Gli overlays saranno elaborati da una datasource e passati al widget OpenLayers.
-
-Il file https://github.com/pcm-dpc/COVID-19/blob/master/dati-json/dpc-covid19-ita-regioni.json contiene i dati sul numero di contagi, ricoveri, decessi, tamponi registrati giorno per giorno per ogni regione, completi delle coordinate geografiche necessarie per geolocalizzarli.
-
-Crea una nuova datasource di tipo JSON con le seguenti proprietà:
-
-- Name: `casi-per-regione`
-- URL: `https://github.com/pcm-dpc/COVID-19/raw/master/dati-json/dpc-covid19-ita-regioni.json`
-- Subscription to Parameters: `dataSelezionata`
+- Name: `censimento-2011`
+- URL: `http://www.datiopen.it//ODataProxy/MdData('4ca2b914-2eb0-4097-a985-5dddca9acf17@datiopen')/DataRows`
+- Response Adapter: `Raw`
+- Preload: `true`
+- Deferred: `true`
 - Post-Processor:
 
 ```
-!!! TODO !!! ispezione overlays, non spariscono quando la datasource si svuota
-```
-
-La funzione in *Post-Processor* seleziona nell'insieme di dati regionali quelli relativi alla data selezionata, dopodiché, per ciascuna regione, calcola la dimensione del cerchio che le verrà assegnato in base al numero totale di casi registrati e determina il posizionamento, l'elemento HTML con cui rappresentare l'overlay e la classe CSS da assegnargli. Quest'ultima dovrà essere definita nell'apposita sezione dell'editor.
-
-Nella sezione *Styles* dell'editor, clicca sul pulsante *Add Style* e assegna alla proprietà *CSS Text* la seguente classe CSS:
-
-```
-.regions {
-    opacity: .8;
-    border-radius: 50%;
-    line-height: 50px;
-    background-color: red;
+e = function(dataset){
+    var data = _.map(dataset.d.results, function(d){
+        var regionKey = _.find(_.keys(d), (key) => { return key.includes('regione'); });
+        var totKey = _.find(_.keys(d), (key) => { return key.includes('totale'); });
+        return {regione: d[regionKey], residenti: parseInt(d[totKey], 10)};
+    });
+    return data;
 }
 ```
 
-A questo punto, torna alla pagina `analisi-generale`, clicca su *Add Widget* e poi trascina il nuovo widget tra quello di tipo `Slider` e il primo di tipo `Number`, in modo che sia al terzo posto nell'elenco dei widget inclusi nella pagina. Assegna al nuovo widget le seguenti proprietà:
+La funzione in *Post-Processor* può elaborare il risultato della chiamata al servizio prima di restituirlo. In questo caso, il dataset viene ripulito dai metadati e dai dati sui residenti divisi per genere, non necessari per questa dashboard.
 
-- Widget Type: `OpenLayers Map`
-- Data Source: `casi-per-regione`
-- Center.X: `13`
-- Center.Y: `42`
-- Zoom: `5`
-- Grid Rows: `4`
+A questo punto, crea una datasource di tipo `JavaScript` per combinare i dati ISTAT con quelli sui contagi:
+
+- Name: `casi-su-popolazione`
+- Subscription To Parameters: `dataSelezionata`, `regioneSelezionata`
+- Processor:
+
+```
+e = function(promise){
+    var result = [];
+    var day = Cyclotron.parameters.dataSelezionata;
+    var region = Cyclotron.parameters.regioneSelezionata;
+    
+    Cyclotron.dataSources['dati-regionali'].execute().then(function(dataset1){
+        var dayData = _.filter(dataset1['0'].data, function(d){
+            return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');
+        });
+        
+        if(dayData.length > 0){
+            Cyclotron.dataSources['censimento-2011'].execute().then(function(dataset2){
+                _.each(dayData, function(casiRegionali){
+                    var censimento = _.find(dataset2['0'].data, function(p){
+                        return casiRegionali.denominazione_regione.replace('-', ' ').includes(p.regione.split('/')[0].replace('-', ' ')); //gestisci Bolzano ("Bolzano/Bozen") e Friuli ("Friuli-Venezia Giulia")
+                    });
+                    
+                    var casiPerMilione = casiRegionali.totale_casi / (censimento.residenti/1000000);
+                    
+                    result.push({
+                        Regione: casiRegionali.denominazione_regione,
+                        Casi: Math.round(casiPerMilione),
+                        selezionata: (region && region.Regione && casiRegionali.denominazione_regione.includes(region.Regione) ? true : false)
+                    });
+                });
+                
+                promise.resolve(result);
+            });
+        } else {
+            promise.resolve([]);
+        }
+    });
+}
+```
+
+Il processore recupera i dati sui contagi e, per ogni regione, identifica il numero di residenti nel dataset con il censimento e calcola il numero di contagi registrati per milione di abitanti. La colonna `selezionata` servirà per colorare la riga corrispondente alla regione selezionata, se presente.
+
+Adesso crea un nuovo widget di tipo `Table` sulla pagina `dettaglio` e configuralo come segue:
+
+- Title: `Casi/milione di Abitanti`
+- Data Source: `casi-su-popolazione`
+- Omit Headers: `true`
+- Sort By: `-Casi`
+- Grid Rows: `2`
+- Grid Columns: `1`
+
+Sotto la proprietà *Columns*, aggiungi due colonne e popola il campo *Name* con `Regione` per la prima, `Casi` per la seconda. Sotto la proprietà *Rules*, crea una regola con cui colorare di giallo la riga corrispondente alla regione selezionata, configurandola come segue:
+
+- Rule: `#{selezionata}`
+- Background Color (CSS): `yellow`
+
+### 10. Grafico a Linee
+
+L'ultimo grafico rappresenterà l'andamento dei casi positivi rilevati giorno per giorno fino alla data scelta, a livello regionale nel caso ci sia una regione selezionata, altrimenti nazionale.
+
+Crea una nuova datasource di tipo `JavaScript` con le seguenti proprietà:
+
+- Name: `andamento-positivi`
+- Subscription To Parameters: `dataSelezionata`, `regioneSelezionata`
+- Processor:
+
+```
+e = function(promise){
+    var result = [];
+    var day = Cyclotron.parameters.dataSelezionata;
+    var region = Cyclotron.parameters.regioneSelezionata;
+    var datasource = (region && region.Regione ? 'dati-regionali' : 'dati-nazionali');
+    
+    Cyclotron.dataSources[datasource].execute().then(function(dataset){
+        var dayData = _.filter(dataset['0'].data, function(d){
+            if(region && region.Regione){
+                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSameOrBefore(moment(day, 'YYYY-MM-DD'), 'day') && d.denominazione_regione.includes(region.Regione);
+            } else {
+                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSameOrBefore(moment(day, 'YYYY-MM-DD'), 'day');
+            }
+        });
+        
+        _.each(dayData, function(giorno){
+            result.push({
+                'Giorno': moment(giorno.data, 'YYYY-MM-DDTHH:mm:ss').format('DD/MM'),
+                'Nuovi Positivi': giorno.nuovi_positivi
+            });
+        });
+        
+        promise.resolve(result);
+    });
+}
+```
+
+Infine nella pagina `dettaglio` crea un widget di tipo `Google Charts` con la seguente configurazione:
+
+- Name: `positivi`
+- Title: `Andamento Nuovi Positivi - ${Cyclotron.parameters.regioneSelezionata && Cyclotron.parameters.regioneSelezionata.Regione ? Cyclotron.parameters.regioneSelezionata.Regione : 'Italia'}`
+- Data Source: `andamento-positivi`
+- Chart Type: `LineChart`
+- Grid Rows: `2`
 - Grid Columns: `2`
-
-Alla proprietà *Layers*, cliccando su *Add Layer* aggiungi due layers. Al primo, che sarà un layer di base in colori neutrali, assegna le seguenti proprietà:
-
-- Type: `tile`
-- Source.Name: `Stamen`
-- Source.Configuration:
+- Options:
 
 ```
 {
-    "layer": "toner-lite"
+    "legend": "none",
+    "chartArea": {
+        "height": "60%",
+        "left": "7%",
+        "top": 19,
+        "width": "90%"
+    },
+    "hAxis": {
+        "showTextEvery": 5
+    }
 }
 ```
 
-Il secondo layer sarà di tipo vettoriale e rappresenterà i confini regionali:
+### 11. Encryption
 
-- Type: `vector`
-- Source.Name: `Vector`
-- Source.Configuration:
 
-```
-{
-    "format": new ol.format.GeoJSON(),
-    "url": "https://gist.githubusercontent.com/datajournalism-it/f1abb68e718b54f6a0fe/raw/23636ff76534439b52b87a67e766b11fa7373aa9/regioni-con-trento-bolzano.geojson"
-}
-```
-
-Affiché il widget interpreti correttamente i dati provenienti dalla datasource, occorre configurare la proprietà `DataSource Mapping` come segue, specificando quindi quali campi nel risultato prodotto dalla datasource contengano determinate informazioni:
-
-- Identifier Field: `id`
-- Overlay List Field: `regions`
-- CSS Class Field: `cssClass`
-- Overlay Identifier Field: `denominazione_regione`
-- Position Field: `coordinates`
-- Positioning Field: `positioning`
-- Template Field: `htmlContent`
-
-A questo punto, aprendo il preview della dashboard, sarà già visibile la mappa con i confini regionali e i cerchi rossi indicheranno proporzionalmente il numero di contagi rilevati per ciascuna regione in una specifica data. L'ultimo passaggio per concludere la prima pagina è l'implementazione della selezione di una regione dalla mappa.
