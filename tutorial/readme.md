@@ -666,4 +666,4 @@ Infine nella pagina `dettaglio` crea un widget di tipo `Google Charts` con la se
 
 ### 11. Encryption
 
-
+Nel caso in cui la configurazione di una datasource contenga dati sensibili, come per esempio credenziali, Cyclotron consente di criptare le stringhe che necessitano di protezione, le quali verranno decriptate al momento dell'esecuzione della datasource da parte del servizio di proxy.
