@@ -1,34 +1,10 @@
-DATI OPEN:
-- WorldBank:
-  - https://data.worldbank.org/
-  - https://databank.worldbank.org/home
-  - catalogo: https://datacatalog.worldbank.org/
-- OMS (API OData): https://www.who.int/data/gho/info/gho-odata-api
-- USA:
-	- https://www.data.gov/
-- UE:
-	- Portale Open Data UE: https://data.europa.eu/euodp/it/home
-	- https://www.europeandataportal.eu/en
-- ITALIA:
-	- Dati Aperti della PA (anche formato OData): https://www.dati.gov.it/
-	- Dati geo della PA: https://geodati.gov.it/geoportale/
-	- datahub.io (anche geoJSON): https://datahub.io/
-	- DatiOpen.it (poco aggiornato): http://www.datiopen.it/
-	- Open Data Hub Italia: https://www.sciamlab.com/opendatahub/dataset
-- DASHBOARD:
-	- http://opendatadpc.maps.arcgis.com/apps/opsdashboard/index.html#/b0c68bce2cce478eaac82fe38d4138b1
-	- https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6
-
-
-- Le datasources di tipo JSON possono prendere dati sia da un servizio web (API) sia da un file (es. Github raw json files)
-
-**************************************************
+## Tutorial
 
 Questo tutorial illustra come creare con Cyclotron una dashboard che includerà le seguenti features:
 - fonti dati JSON
 - fonti dati OData
 - elaborazione di fonti dati diverse tramite JavaScript
-- dati geospaziali e geoJSON su mappa interattiva
+- dati geospaziali su mappa interattiva
 - criptazione di dati sensibili nella configurazione.
 
 I dati utilizzati si riferiscono alla diffusione del virus Covid-19 in Italia e sono resi disponibili dalla Protezione Civile sulla seguente repository: https://github.com/pcm-dpc/COVID-19. Le altre fonti dati utilizzate sono:
@@ -176,7 +152,7 @@ Adesso il documento JSON completo del widget slider dovrebbe essere questo:
 
 Il file JSON https://github.com/pcm-dpc/COVID-19/blob/master/dati-json/dpc-covid19-ita-andamento-nazionale.json contiene i dati sul numero di contagi, ricoveri, decessi, tamponi registrati giorno per giorno a livello nazionale, mentre il file https://github.com/pcm-dpc/COVID-19/blob/master/dati-json/dpc-covid19-ita-regioni.json contiene i medesimi dati per ciascuna regione. Questi dati possono essere analizzati sulla dashboard tramite la configurazione di alcune datasource, che li recupereranno e rielaboreranno per la visualizzazione in un widget.
 
-Nella sezione *Data Sources* dell'editor, clicca sul pulsante *Add Data source* per creare una nuova datasource di tipo `JSON` e assegnale le seguenti proprietà per richiedere i dati nazionali:
+Nella sezione *Data Sources* dell'editor, clicca sul pulsante *Add Data source* per creare una nuova datasource di tipo `JSON`, che può prendere i dati sia da un servizio web sia da un file .json. Assegnale le seguenti proprietà per richiedere i dati nazionali:
 
 - Name: `dati-nazionali`
 - URL: `https://github.com/pcm-dpc/COVID-19/raw/master/dati-json/dpc-covid19-ita-andamento-nazionale.json`
@@ -667,3 +643,20 @@ Infine nella pagina `dettaglio` crea un widget di tipo `Google Charts` con la se
 ### 11. Encryption
 
 Nel caso in cui la configurazione di una datasource contenga dati sensibili, come per esempio credenziali, Cyclotron consente di criptare le stringhe che necessitano di protezione, le quali verranno decriptate al momento dell'esecuzione della datasource da parte del servizio di proxy.
+
+Nell'editor di ogni dashboard, dal menu a sinistra si può accedere al servizio di encryption: cliccando su *Encrypt...* si aprirà una finestra da cui sarà possibile inserire una stringa e copiare la stringa criptata e già racchiusa nella notazione `!{}`, che indicherà al servizio di proxy la presenza di una stringa da decriptare prima di eseguire la datasource.
+
+Le fonti di dati utilizzate per questo tutorial non sono protette, ma supponiamo che richiedano una chiave (es. una API key) trasmessa come parametro nella richiesta:
+
+*https://github.com/pcm-dpc/COVID-19/raw/master/dati-json/dpc-covid19-ita-regioni.json?secretkey=mykey123456789*
+
+La chiave può essere criptata nella configurazione della datasource, in modo che non sia mai visibile in chiaro nel browser. Si può criptare il singolo parametro come coppia chiave-valore nella proprietà *Query Parameters*:
+
+- chiave: `secretkey`
+- valore: `!{lByxOaWRKKOfVGKkCFS09w==}`
+
+oppure criptare direttamente in parte o tutto l'URL:
+
+- URL: `https://github.com/pcm-dpc/COVID-19/raw/master/dati-json/dpc-covid19-ita-regioni.json?secretkey=!{lByxOaWRKKOfVGKkCFS09w==}`
+
+Allo stesso modo possono essere criptate altre parti della configurazione delle datasource, come le credenziali AWS (nella proprietà *AWS Credentials*) o OAuth2.0 (nella proprietà *OAuth2.0 Client Credentials*).
