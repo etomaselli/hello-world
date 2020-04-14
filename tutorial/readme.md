@@ -12,6 +12,8 @@ I dati utilizzati si riferiscono alla diffusione del virus Covid-19 in Italia e 
 - confini amministrativi delle regioni italiane, forniti da https://gist.github.com/datajournalism-it
 - popolazione residente per regione, rilevata dal censimento ISTAT 2011 ed esposta sul portale DatiOpen.it, http://www.datiopen.it/it/opendata/Censimento_2011_Popolazione_per_regione_e_sesso
 
+Nella cartella https://github.com/etomaselli/hello-world/tree/master/tutorial sono presenti alcuni screenshot della dashboard e il suo documento JSON completo.
+
 ### 1. Creazione di una Nuova Dashboard
 
 Dall'interfaccia di Cyclotron, crea una nuova dashboard denominata `analisi-covid19-italia`. Nella sezione *Details* dell'editor si possono configurare le proprietà generali della dashboard, come il tema grafico o la barra laterale. Poiché ogni dashboard viene salvata come documento JSON, cliccando sul pulsante *Edit JSON* si può visualizzare e modificare direttamente tale documento.
