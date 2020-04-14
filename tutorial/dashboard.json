@@ -1,0 +1,260 @@
+{
+    "dataSources": [{
+        "deferred": true,
+        "name": "dati-nazionali",
+        "preload": true,
+        "type": "json",
+        "url": "https://github.com/pcm-dpc/COVID-19/raw/master/dati-json/dpc-covid19-ita-andamento-nazionale.json"
+    }, {
+        "deferred": true,
+        "name": "dati-regionali",
+        "preload": true,
+        "type": "json",
+        "url": "https://github.com/pcm-dpc/COVID-19/raw/master/dati-json/dpc-covid19-ita-regioni.json"
+    }, {
+        "deferred": true,
+        "name": "dati-provinciali",
+        "preload": true,
+        "type": "json",
+        "url": "https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-json/dpc-covid19-ita-province.json"
+    }, {
+        "deferred": true,
+        "name": "censimento-2011",
+        "postProcessor": "e = function(dataset){\n    var data = _.map(dataset.d.results, function(d){\n        var regionKey = _.find(_.keys(d), (key) => { return key.includes('regione'); });\n        var totKey = _.find(_.keys(d), (key) => { return key.includes('totale'); });\n        return {regione: d[regionKey], residenti: parseInt(d[totKey], 10)};\n    });\n    return data;\n}",
+        "preload": true,
+        "responseAdapter": "raw",
+        "type": "odata",
+        "url": "http://www.datiopen.it//ODataProxy/MdData('4ca2b914-2eb0-4097-a985-5dddca9acf17@datiopen')/DataRows"
+    }, {
+        "name": "contatori-generali",
+        "parameterSubscription": ["dataSelezionata", "regioneSelezionata"],
+        "processor": "e = function(promise){\n    var result = [];\n    var day = Cyclotron.parameters.dataSelezionata;\n    var region = Cyclotron.parameters.regioneSelezionata;\n    var datasource = (region && region.Regione ? 'dati-regionali' : 'dati-nazionali');\n    \n    Cyclotron.dataSources[datasource].execute().then(function(dataset){\n        var dayData = _.find(dataset['0'].data, function(d){\n            if(region && region.Regione){\n                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day') && d.denominazione_regione.includes(region.Regione);\n            } else {\n                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');\n            }\n        });\n        \n        if(dayData){\n            result.push(dayData);\n        }\n        \n        promise.resolve(result);\n    });\n}",
+        "type": "javascript"
+    }, {
+        "name": "dati-sanitari",
+        "parameterSubscription": ["dataSelezionata", "regioneSelezionata"],
+        "processor": "e = function(promise){\n    var result = [];\n    var day = Cyclotron.parameters.dataSelezionata;\n    var region = Cyclotron.parameters.regioneSelezionata;\n    var datasource = (region && region.Regione ? 'dati-regionali' : 'dati-nazionali');\n    \n    Cyclotron.dataSources[datasource].execute().then(function(dataset){\n        var dayData = _.find(dataset['0'].data, function(d){\n            if(region && region.Regione){\n                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day') && d.denominazione_regione.includes(region.Regione);\n            } else {\n                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');\n            }\n        });\n        \n        if(dayData){\n            result = [{\n                dato: 'Ricoverati con sintomi',\n                valore: dayData.ricoverati_con_sintomi\n            },{\n                dato: 'Terapia intensiva',\n                valore: dayData.terapia_intensiva\n            },{\n                dato: 'Totale ospedalizzati',\n                valore: dayData.totale_ospedalizzati\n            },{\n                dato: 'Isolamento domiciliare',\n                valore: dayData.isolamento_domiciliare\n            },{\n                dato: 'Tamponi',\n                valore: dayData.tamponi\n            }];\n        }\n        \n        promise.resolve(result);\n    });\n}",
+        "type": "javascript"
+    }, {
+        "name": "suddivisione-casi",
+        "parameterSubscription": ["dataSelezionata", "regioneSelezionata"],
+        "processor": "e = function(promise){\n    var result = [];\n    var day = Cyclotron.parameters.dataSelezionata;\n    var region = Cyclotron.parameters.regioneSelezionata;\n    var datasource = (region && region.Regione ? 'dati-provinciali' : 'dati-regionali');\n    \n    Cyclotron.dataSources[datasource].execute().then(function(dataset){\n        var dayData = _.filter(dataset['0'].data, function(d){\n            if(region && region.Regione){\n                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day') && d.denominazione_regione.includes(region.Regione);\n            } else {\n                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');\n            }\n        });\n        \n        _.each(dayData, function(zona){\n            result.push({\n                'Zona': (region && region.Regione ? zona.denominazione_provincia : zona.denominazione_regione),\n                'Casi Totali': zona.totale_casi\n            });\n        });\n        \n        promise.resolve(result);\n    });\n}",
+        "type": "javascript"
+    }, {
+        "name": "casi-su-popolazione",
+        "parameterSubscription": ["dataSelezionata", "regioneSelezionata"],
+        "processor": "e = function(promise){\n    var result = [];\n    var day = Cyclotron.parameters.dataSelezionata;\n    var region = Cyclotron.parameters.regioneSelezionata;\n    \n    Cyclotron.dataSources['dati-regionali'].execute().then(function(dataset1){\n        var dayData = _.filter(dataset1['0'].data, function(d){\n            return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSame(moment(day, 'YYYY-MM-DD'), 'day');\n        });\n        \n        if(dayData.length > 0){\n            Cyclotron.dataSources['censimento-2011'].execute().then(function(dataset2){\n                _.each(dayData, function(casiRegionali){\n                    var censimento = _.find(dataset2['0'].data, function(p){\n                        return casiRegionali.denominazione_regione.replace('-', ' ').includes(p.regione.split('/')[0].replace('-', ' ')); //gestisci Bolzano (\"Bolzano/Bozen\") e Friuli (\"Friuli-Venezia Giulia\")\n                    });\n                    \n                    var casiPerMilione = casiRegionali.totale_casi / (censimento.residenti/1000000);\n                    \n                    result.push({\n                        Regione: casiRegionali.denominazione_regione,\n                        Casi: Math.round(casiPerMilione),\n                        selezionata: (region && region.Regione && casiRegionali.denominazione_regione.includes(region.Regione) ? true : false)\n                    });\n                });\n                \n                promise.resolve(result);\n            });\n        } else {\n            promise.resolve([]);\n        }\n    });\n}",
+        "type": "javascript"
+    }, {
+        "name": "andamento-positivi",
+        "parameterSubscription": ["dataSelezionata", "regioneSelezionata"],
+        "processor": "e = function(promise){\n    var result = [];\n    var day = Cyclotron.parameters.dataSelezionata;\n    var region = Cyclotron.parameters.regioneSelezionata;\n    var datasource = (region && region.Regione ? 'dati-regionali' : 'dati-nazionali');\n    \n    Cyclotron.dataSources[datasource].execute().then(function(dataset){\n        var dayData = _.filter(dataset['0'].data, function(d){\n            if(region && region.Regione){\n                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSameOrBefore(moment(day, 'YYYY-MM-DD'), 'day') && d.denominazione_regione.includes(region.Regione);\n            } else {\n                return moment(d.data, 'YYYY-MM-DDTHH:mm:ss').isSameOrBefore(moment(day, 'YYYY-MM-DD'), 'day');\n            }\n        });\n        \n        _.each(dayData, function(giorno){\n            result.push({\n                'Giorno': moment(giorno.data, 'YYYY-MM-DDTHH:mm:ss').format('DD/MM'),\n                'Nuovi Positivi': giorno.nuovi_positivi\n            });\n        });\n        \n        promise.resolve(result);\n    });\n}",
+        "type": "javascript"
+    }],
+    "description": "Analisi della diffusione del virus Covid-19 in Italia",
+    "name": "analisi-covid19-italia",
+    "pages": [{
+        "frequency": 1,
+        "layout": {
+            "gridColumns": 4,
+            "gridRows": 5
+        },
+        "name": "analisi-generale",
+        "widgets": [{
+            "customHtml": "<div class=\"button-group\" align=\"center\">\n    <button class=\"btn btn-default\" id=\"gen\">Analisi Generale</button>\n    <button class=\"btn btn-default\" id=\"det\">Dettaglio</button>\n</div>\n<script>\n    // La funzione goToPage(pageNum) permette di navigare alla pagina specificata\n    $('#gen').on('click', function () {\n        Cyclotron.goToPage(1);\n    });\n    $('#det').on('click', function () {\n        Cyclotron.goToPage(2);\n    });\n</script>",
+            "gridHeight": 1,
+            "gridWidth": 4,
+            "headerTitle": {
+                "showTitle": true
+            },
+            "parameters": {
+                "showParameters": false
+            },
+            "title": "Diffusione del Virus Covid-19 in Italia",
+            "widget": "header"
+        }, {
+            "direction": "rtl",
+            "gridHeight": 4,
+            "gridWidth": 1,
+            "handlePosition": "#{dataSelezionata}",
+            "maxValue": "#{dataDiOggi}",
+            "minValue": "2020-02-24",
+            "momentFormat": "YYYY-MM-DD",
+            "orientation": "vertical",
+            "parameterSubscription": ["dataDiOggi"],
+            "pips": {
+                "mode": "count",
+                "stepped": true,
+                "values": "5"
+            },
+            "specificEvents": [{
+                "event": "dateTimeChange",
+                "paramName": "dataSelezionata"
+            }],
+            "step": 1,
+            "tooltips": true,
+            "widget": "slider"
+        }, {
+            "center": {
+                "x": "13",
+                "y": "42"
+            },
+            "controls": [{
+                "control": "Zoom"
+            }],
+            "gridHeight": 4,
+            "gridWidth": 2,
+            "layers": [{
+                "source": {
+                    "configuration": "{\n    \"layer\": \"toner-lite\"\n}",
+                    "name": "Stamen"
+                },
+                "type": "Tile"
+            }, {
+                "source": {
+                    "configuration": "{\r\n    \"format\": new ol.format.GeoJSON(),\r\n    \"url\": \"https://gist.githubusercontent.com/datajournalism-it/f1abb68e718b54f6a0fe/raw/23636ff76534439b52b87a67e766b11fa7373aa9/regioni-con-trento-bolzano.geojson\"\r\n}",
+                    "name": "Vector"
+                },
+                "styleFunction": "e = function(feature) {\r\n    var styles = {\r\n        'desel': new ol.style.Style({\r\n            stroke: new ol.style.Stroke({\r\n                color: '#3399CC',\r\n                width: 2\r\n            }),\r\n            fill: new ol.style.Fill({\r\n                color: 'rgba(255, 255, 255, 0.3)'\r\n            })\r\n        }),\r\n        'sel': new ol.style.Style({\r\n            stroke: new ol.style.Stroke({\r\n                color: '#3399CC',\r\n                width: 2\r\n            }),\r\n            fill: new ol.style.Fill({\r\n                color: 'rgba(51, 153, 204, 0.5)'\r\n            })\r\n        })\r\n    };\r\n    \r\n    if(Cyclotron.parameters.regioneSelezionata && Cyclotron.parameters.regioneSelezionata.Regione == feature.getProperties().Regione){\r\n        return styles.sel;\r\n    } else {\r\n        return styles.desel;\r\n    }\r\n}",
+                "type": "Vector"
+            }],
+            "specificEvents": [{
+                "event": "selectVectorFeature",
+                "paramName": "regioneSelezionata"
+            }],
+            "widget": "openLayersMap",
+            "zoom": 5
+        }, {
+            "dataSource": "contatori-generali",
+            "gridHeight": 1,
+            "gridWidth": 1,
+            "noData": "Dati non disponibili per la data scelta",
+            "numbers": [{
+                "number": "#{totale_casi}",
+                "prefix": "Totale Casi"
+            }],
+            "widget": "number"
+        }, {
+            "dataSource": "contatori-generali",
+            "gridHeight": 1,
+            "gridWidth": 1,
+            "noData": "Dati non disponibili per la data scelta",
+            "numbers": [{
+                "number": "#{totale_positivi}",
+                "prefix": "Totale Positivi"
+            }],
+            "widget": "number"
+        }, {
+            "dataSource": "contatori-generali",
+            "gridHeight": 1,
+            "gridWidth": 1,
+            "noData": "Dati non disponibili per la data scelta",
+            "numbers": [{
+                "number": "#{dimessi_guariti}",
+                "prefix": "Dimessi Guariti"
+            }],
+            "widget": "number"
+        }, {
+            "dataSource": "contatori-generali",
+            "gridHeight": 1,
+            "gridWidth": 1,
+            "noData": "Dati non disponibili per la data scelta",
+            "numbers": [{
+                "number": "#{deceduti}",
+                "prefix": "Decessi"
+            }],
+            "widget": "number"
+        }]
+    }, {
+        "frequency": 1,
+        "layout": {
+            "gridColumns": 4,
+            "gridRows": 5
+        },
+        "name": "dettaglio",
+        "widgets": [{
+            "gridHeight": 1,
+            "gridWidth": 4,
+            "linkedWidget": "0,0",
+            "name": "intestazione",
+            "widget": "linkedWidget"
+        }, {
+            "gridHeight": 4,
+            "gridWidth": 1,
+            "linkedWidget": "0,1",
+            "name": "slider",
+            "widget": "linkedWidget"
+        }, {
+            "columns": [{
+                "name": "dato"
+            }, {
+                "name": "valore"
+            }],
+            "dataSource": "dati-sanitari",
+            "gridHeight": 2,
+            "gridWidth": 1,
+            "name": "table",
+            "omitHeaders": true,
+            "title": "Dati Sanitari - ${Cyclotron.parameters.regioneSelezionata && Cyclotron.parameters.regioneSelezionata.Regione ? Cyclotron.parameters.regioneSelezionata.Regione : 'Italia'}",
+            "widget": "table"
+        }, {
+            "chartType": "ColumnChart",
+            "dataSource": "suddivisione-casi",
+            "gridHeight": 2,
+            "gridWidth": 2,
+            "name": "barchart",
+            "options": "{\n    \"legend\": \"none\",\n    \"chartArea\": {\n        \"height\": \"50%\",\n        \"left\": \"7%\",\n        \"top\": 19,\n        \"width\": \"90%\"\n    },\n    \"hAxis\": {\n        \"showTextEvery\": 1,\n        \"slantedText\": \"true\"\n    }\n}",
+            "title": "Casi Totali per ${Cyclotron.parameters.regioneSelezionata && Cyclotron.parameters.regioneSelezionata.Regione ? 'Provincia' : 'Regione'}",
+            "widget": "gchart"
+        }, {
+            "columns": [{
+                "name": "Regione"
+            }, {
+                "name": "Casi"
+            }],
+            "dataSource": "casi-su-popolazione",
+            "gridHeight": 2,
+            "gridWidth": 1,
+            "omitHeaders": true,
+            "rules": [{
+                "background-color": "yellow",
+                "rule": "#{selezionata}"
+            }],
+            "sortBy": ["-Casi"],
+            "title": "Casi/milione di Abitanti",
+            "widget": "table"
+        }, {
+            "chartType": "LineChart",
+            "dataSource": "andamento-positivi",
+            "gridHeight": 2,
+            "gridWidth": 2,
+            "name": "positivi",
+            "options": "{\n    \"legend\": \"none\",\n    \"chartArea\": {\n        \"height\": \"60%\",\n        \"left\": \"7%\",\n        \"top\": 19,\n        \"width\": \"90%\"\n    },\n    \"hAxis\": {\n        \"showTextEvery\": 5\n    }\n}",
+            "title": "Andamento Nuovi Positivi - ${Cyclotron.parameters.regioneSelezionata && Cyclotron.parameters.regioneSelezionata.Regione ? Cyclotron.parameters.regioneSelezionata.Regione : 'Italia'}",
+            "widget": "gchart"
+        }]
+    }],
+    "parameters": [{
+        "defaultValue": "${moment().format('YYYY-MM-DD')}",
+        "name": "dataDiOggi",
+        "showInUrl": false
+    }, {
+        "defaultValue": "${moment().format('YYYY-MM-DD')}",
+        "name": "dataSelezionata",
+        "showInUrl": false
+    }, {
+        "defaultValue": "",
+        "name": "regioneSelezionata",
+        "showInUrl": false
+    }],
+    "scripts": [{
+        "singleLoad": true,
+        "text": "Cyclotron.featureSelectStyleFunction = function(feature){\n    return new ol.style.Style({\n        stroke: new ol.style.Stroke({color: '#3399CC', width: 2}),\n        fill: new ol.style.Fill({color: 'rgba(51, 153, 204, 0.5)'})\n    });\n}"
+    }],
+    "showDashboardControls": false,
+    "sidebar": {
+        "showDashboardSidebar": false
+    },
+    "styles": [],
+    "theme": "light"
+}
