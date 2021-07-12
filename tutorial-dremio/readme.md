@@ -21,7 +21,7 @@ Scarica la repository [COVID-19](https://github.com/pcm-dpc/COVID-19) come file 
 
 Gli stessi dati si trovano anche in formato CSV nelle cartelle "dati-andamento-nazionale", "dati-regioni" e "dati-province". Dremio supporta entrambi i formati di file. Per praticità, nel tutorial utilizzerai quelli in formato JSON.
 
-Dalla pagina di DatiOpen relativa al [censimento 2011](http://www.datiopen.it/it/opendata/Censimento_2011_Popolazione_per_regione_e_sesso), vai al tab *Scarica* ed esporta il dataset in formato CSV. Ogni riga nel file corrisponde ad una regione e riporta la popolazione maschile. femminile e totale.
+Dalla pagina di DatiOpen relativa al [censimento 2011](http://www.datiopen.it/it/opendata/Censimento_2011_Popolazione_per_regione_e_sesso), vai al tab *Scarica* ed esporta il dataset in formato CSV. Ogni riga nel file corrisponde ad una regione e riporta la popolazione maschile, femminile e totale.
 
 ### 2. Caricamento dei Dati su Dremio
 
@@ -33,21 +33,39 @@ Nel dataset *censimento-2011* la denominazione di alcune regioni è diversa da q
 
 Con lo stesso procedimento, sostituisci il valore "Bolzano/Bozen" con "P.A. Bolzano" e "Trento" con "P.A. Trento". Infine clicca su *Save as...* in alto a destra e salva il nuovo dataset virtuale nella tua home denominandolo `censimento-2011-conformed`.
 
-### 4. Dataset con i Nuovi Casi ogni 100000 Abitanti
+### 4. Dataset Regionale con Popolazione
 
-Se due regioni oggi registrano 1000 nuovi casi ciascuna ma la prima è dieci volte più popolosa, la situazione epidemiologica nella seconda regione è più critica di quanto appaia se si confronta solo il numero assoluto di nuovi casi per regione. Dunque per confrontare l'andamento dei contagi tra le diverse regioni può essere utile rapportare il numero di nuovi casi giornalieri per regione con una cifra di riferimento, per esempio 100000 abitanti.
+Per arricchire il dataset regionale con il numero di abitanti di ciascuna regione, è necessario combinarlo con i dati sul censimento.
+
+In Dremio ci sono due modi per unire i dati di più dataset: con un editor grafico oppure con una query SQL:
+
+**Join nell'Editor**
 
 Dalla home di Dremio, clicca sul dataset *dpc-covid19-ita-regioni* e poi su *Join* in alto a sinistra. Nella nuova schermata, clicca sul dataset *censimento-2011-conformed* che hai creato prima e poi clicca su *Next*. Nella schermata successiva dovrai inserire una condizione per il join. Le colonne da mettere in relazione sono *denominazione_regione* per il dataset *dpc-covid19-ita-regioni* e *Regione* per il dataset *censimento-2011-conformed*; trascinale dai menu a tendina ai rispettivi riquadri in modo da inserire la condizione `denominazione_regione = Regione`. Se clicchi su *Preview*, nella tabella in basso vedrai le colonne del secondo dataset aggiunte a destra di quelle del primo. Clicca su *Apply* per confermare il join.
 
-Adesso il nuovo dataset contiene tutte le colonne di entrambi i dataset di partenza, alcune delle quali possono essere escluse perché contengono informazioni extra o non rilevanti. Cliccando sulla freccia a destra del loro nome e selezionando *Drop*, elimina le seguenti colonne:
+**Join in una Query**
 
-- *Femmine* e *Maschi* (ti interessa solo la popolazione totale delle regioni)
-- *codice_nuts_1*, *codice_nuts_2*, *stato*, *codice_regione* (codici territoriali)
-- *note*, *note_casi*, *note_test* (note informative)
-- *Regione* (è un doppione della colonna *denominazione_regione*)
+Dalla home di Dremio, clicca su *New Query* e inserisci la query seguente:
 
-Rinomina la colonna *Totale* in *popolazione* per renderlo più comprensibile.
+```
+SELECT * FROM "@dremio"."dpc-covid19-ita-regioni" regioni
+JOIN "@dremio"."censimento-2011-conformed" censimento
+ON regioni.denominazione_regione = censimento.Regione
+```
+
+Clicca su *Preview* e nella tabella in basso vedrai le colonne del primo dataset affiancate a quelle del secondo.
+
+In entrambi i modi, adesso il nuovo dataset contiene tutte le colonne di entrambi i dataset di partenza. Rinomina la colonna *Totale* in *popolazione* per renderlo più comprensibile. A questo punto puoi scegliere quali colonne ti interessa includere nel dataset e quali vuoi escludere, per esempio perché contengono informazioni extra o non rilevanti. Una colonna può essere rimossa cliccando sulla freccia a destra del suo nome e selezionando *Drop*.
+Conserva solo le colonne *data*, *lat*, *long*, *denominazione_regione*, *ricoverati_con_sintomi*, *terapia_intensiva*, *totale_ospedalizzati*, *isolamento_domiciliare*, *totale_positivi*, *dimessi_guariti*, *deceduti*, *totale_casi* e *popolazione* e rimuovi le altre.
+
+Clicca su *Save As...* in alto a destra e salva il nuovo dataset virtuale con il nome `covid19-ita-regioni-with-population`.
+
+### 5. Dataset con i Valori ogni 100000 Abitanti
+
+Se due regioni oggi hanno 1000 casi positivi ciascuna ma la prima è dieci volte più popolosa, la situazione epidemiologica nella seconda regione è più critica di quanto appaia se si confronta solo il numero assoluto di casi positivi per regione. Dunque per confrontare l'andamento dei contagi tra le diverse regioni può essere utile rapportare i valori giornalieri per regione con una cifra di riferimento, per esempio 100000 abitanti.
+
+Dalla home di Dremio, clicca sul dataset *covid19-ita-regioni-with-population* che hai appena creato per usarlo come punto di partenza. Rimuovi le colonne *dimessi_guariti*, *deceduti* e *totale_casi*, dato che sono contatori e riportano dati assoluti.
 
 
-3. query per esplorare i dati e combinarli: dataset regioni + popolazione per regione, dataset regioni con valore di nuovi_positivi ogni 100k abitanti
-5. creazione di un nuovo dataset
+
+
