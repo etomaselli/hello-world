@@ -29,9 +29,11 @@ Dalla tua home su Dremio, clicca sul pulsante *Upload file*, naviga fino alla ca
 
 ### 3. Adattamento del Dataset sul Censimento
 
-Nel dataset *censimento-2011* la denominazione di alcune regioni è diversa da quella usata nei dataset della Protezione Civile. Prima di poterli combinare, è necessario uniformarli. Dalla home di Dremio, clicca sul dataset *censimento-2011* per visualizzarlo, seleziona la stringa "Friuli-Venezia Giulia" dalla colonna *Regione* e seleziona l'opzione *Replace...* dal menu a tendina che si aprirà. Nella schermata successiva potrai sostituire la stringa selezionata con un nuovo valore in tutta la colonna *Regione* (di fatto Dremio creerà una nuova colonna denominata *Regione* ed eliminerà quella vecchia). Inserisci nel campo *Replacement value* la stringa `Friuli Venezia Giulia` e clicca su *Apply*.
+Nel dataset *censimento-2011* la denominazione di alcune regioni è diversa da quella usata nei dataset della Protezione Civile. Prima di poterli combinare, è necessario uniformarli. Dalla home di Dremio, clicca sul dataset *censimento-2011* per visualizzarlo, seleziona la stringa "Friuli-Venezia Giulia" dalla colonna *Regione* e seleziona l'opzione *Replace...* dal menu a tendina che si aprirà. Nella schermata successiva potrai sostituire la stringa selezionata con un nuovo valore in tutta la colonna *Regione* (di fatto Dremio creerà una nuova colonna denominata *Regione* ed eliminerà quella vecchia). Inserisci nel campo *Replacement value* la stringa `Friuli Venezia Giulia` e clicca su *Apply*. Con lo stesso procedimento, sostituisci il valore "Bolzano/Bozen" con "P.A. Bolzano" e "Trento" con "P.A. Trento".
 
-Con lo stesso procedimento, sostituisci il valore "Bolzano/Bozen" con "P.A. Bolzano" e "Trento" con "P.A. Trento". Infine clicca su *Save as...* in alto a destra e salva il nuovo dataset virtuale nella tua home denominandolo `censimento-2011-conformed`.
+Se a sinistra del nome delle colonne *Femmine*, *Maschi* e *Totale* c'è l'icona "Abc", significa che Dremio ha interpretato i valori riportati come testo. Per convertirli in numeri, clicca sull'icona, seleziona *Integer...* e clicca su *Apply...*.
+
+Infine clicca su *Save as...* in alto a destra e salva il nuovo dataset virtuale nella tua home denominandolo `censimento-2011-conformed`.
 
 ### 4. Dataset Regionale con Popolazione
 
@@ -64,7 +66,21 @@ Clicca su *Save As...* in alto a destra e salva il nuovo dataset virtuale con il
 
 Se due regioni oggi hanno 1000 casi positivi ciascuna ma la prima è dieci volte più popolosa, la situazione epidemiologica nella seconda regione è più critica di quanto appaia se si confronta solo il numero assoluto di casi positivi per regione. Dunque per confrontare l'andamento dei contagi tra le diverse regioni può essere utile rapportare i valori giornalieri per regione con una cifra di riferimento, per esempio 100000 abitanti.
 
-Dalla home di Dremio, clicca sul dataset *covid19-ita-regioni-with-population* che hai appena creato per usarlo come punto di partenza. Rimuovi le colonne *dimessi_guariti*, *deceduti* e *totale_casi*, dato che sono contatori e riportano dati assoluti.
+Dalla home di Dremio, clicca sul dataset *covid19-ita-regioni-with-population* che hai appena creato per usarlo come punto di partenza. Rimuovi le colonne *dimessi_guariti*, *deceduti* e *totale_casi*, dato che sono contatori e riportano dati assoluti. Le colonne rimaste vanno modificate in modo che i valori riportati siano riferiti a 100000 abitanti.
+
+Clicca sulla freccia a destra del nome di *ricoverati_con_sintomi*, seleziona *Calculated field...* e inserisci nel riquadro di sinistra che apparirà l'espressione
+
+```
+"ricoverati_con_sintomi"/("popolazione"/100000)
+```
+
+Se clicchi su *Preview* vedrai la colonna con i valori originali e quella con i valori calcolati, che andrà a sostituire la prima. Clicca su *Apply* per confermare l'operazione.
+
+Con lo stesso procedimento, applica la trasformazione anche alle colonne *terapia_intensiva* (`"terapia_intensiva"/("popolazione"/100000)`), *totale_ospedalizzati* (`"totale_ospedalizzati"/("popolazione"/100000)`), *isolamento_domiciliare* (`"isolamento_domiciliare"/("popolazione"/100000)`) e *totale_positivi* (`"totale_positivi"/("popolazione"/100000)`).
+
+Salva il nuovo dataset con il nome `covid19-ita-regioni-per-100k`.
+
+TODO: convertire in float?
 
 
 
