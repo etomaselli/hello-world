@@ -88,4 +88,12 @@ Il dataset *dpc-covid19-ita-province* ha alcuni campi contenenti codici territor
 
 Ogni regione nel dataset ha anche una provincia in più denominata "In fase di definizione/aggiornamento", usata per indicare i dati non ancora assegnati ad una specifica provincia. Per escludere questa provincia fittizia dal risultato, seleziona la prima stringa "In fase di definizione/aggiornamento" che trovi nella colonna *denominazione_provincia* e clicca sull'opzione *Exclude...* nel menu a tendina. Nella nuova schermata vedrai un preview del dataset senza le righe in cui `denominazione_provincia='In fase di definizione/aggiornamento'`. Clicca su *Apply* per confermare la trasformazione.
 
+Potresti notare che le righe corrispondenti alla provincia di Napoli hanno il campo *sigla_provincia* nullo. Questo perché Dremio ha interpretato la stringa "NA" come N/A. Per correggerlo, seleziona il primo valore `null` che trovi nella colonna *sigla_provincia* e scegli l'opzione *Replace...* dal menu. Nella nuova schermata, clicca sul metodo *Custom condition* in alto a sinistra e inserisci la condizione
+
+```
+"denominazione_provincia"='Napoli' AND "sigla_provincia" IS NULL
+```
+
+Inserisci nel campo *Replacement value* la sigla "NA" e clicca su *Apply*. Infine salva il nuovo dataset virtuale con il nome `covid19-ita-province-reduced`.
+
 
