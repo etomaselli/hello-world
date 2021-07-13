@@ -21,6 +21,8 @@ Scarica la repository [COVID-19](https://github.com/pcm-dpc/COVID-19) come file 
 
 Gli stessi dati si trovano anche in formato CSV nelle cartelle "dati-andamento-nazionale", "dati-regioni" e "dati-province". Dremio supporta entrambi i formati di file. Per praticità, nel tutorial utilizzerai quelli in formato JSON.
 
+Il formato dei dataset e la descrizione dei campi si trovano nel file https://github.com/pcm-dpc/COVID-19/blob/master/dati-andamento-covid19-italia.md.
+
 Dalla pagina di DatiOpen relativa al [censimento 2011](http://www.datiopen.it/it/opendata/Censimento_2011_Popolazione_per_regione_e_sesso), vai al tab *Scarica* ed esporta il dataset in formato CSV. Ogni riga nel file corrisponde ad una regione e riporta la popolazione maschile, femminile e totale.
 
 ### 2. Caricamento dei Dati su Dremio
@@ -29,7 +31,7 @@ Dalla tua home su Dremio, clicca sul pulsante *Upload file*, naviga fino alla ca
 
 ### 3. Adattamento del Dataset sul Censimento
 
-Nel dataset *censimento-2011* la denominazione di alcune regioni è diversa da quella usata nei dataset della Protezione Civile. Prima di poterli combinare, è necessario uniformarli. Dalla home di Dremio, clicca sul dataset *censimento-2011* per visualizzarlo, seleziona la stringa "Friuli-Venezia Giulia" dalla colonna *Regione* e seleziona l'opzione *Replace...* dal menu a tendina che si aprirà. Nella schermata successiva potrai sostituire la stringa selezionata con un nuovo valore in tutta la colonna *Regione* (di fatto Dremio creerà una nuova colonna denominata *Regione* ed eliminerà quella vecchia). Inserisci nel campo *Replacement value* la stringa `Friuli Venezia Giulia` e clicca su *Apply*. Con lo stesso procedimento, sostituisci il valore "Bolzano/Bozen" con "P.A. Bolzano" e "Trento" con "P.A. Trento".
+Nel dataset *censimento-2011* la denominazione di alcune regioni è diversa da quella usata nei dataset della Protezione Civile. Prima di poterli combinare, è necessario uniformarli. Dalla home di Dremio, clicca sul dataset *censimento-2011* per visualizzarlo, seleziona la prima stringa "Friuli-Venezia Giulia" che trovi nella colonna *Regione* e seleziona l'opzione *Replace...* dal menu a tendina che si aprirà. Nella schermata successiva potrai sostituire la stringa selezionata con un nuovo valore in tutta la colonna *Regione* (di fatto Dremio creerà una nuova colonna denominata *Regione* ed eliminerà quella vecchia). Inserisci nel campo *Replacement value* la stringa `Friuli Venezia Giulia` e clicca su *Apply*. Con lo stesso procedimento, sostituisci il valore "Bolzano/Bozen" con "P.A. Bolzano" e "Trento" con "P.A. Trento".
 
 Se a sinistra del nome delle colonne *Femmine*, *Maschi* e *Totale* c'è l'icona "Abc", significa che Dremio ha interpretato i valori riportati come testo. Per convertirli in numeri, clicca sull'icona, seleziona *Integer...* e clicca su *Apply...*.
 
@@ -62,7 +64,7 @@ Conserva solo le colonne *data*, *lat*, *long*, *denominazione_regione*, *ricove
 
 Clicca su *Save As...* in alto a destra e salva il nuovo dataset virtuale con il nome `covid19-ita-regioni-with-population`.
 
-### 5. Dataset con i Valori ogni 100000 Abitanti
+### 5. Dataset Regionale con i Valori ogni 100000 Abitanti
 
 Se due regioni oggi hanno 1000 casi positivi ciascuna ma la prima è dieci volte più popolosa, la situazione epidemiologica nella seconda regione è più critica di quanto appaia se si confronta solo il numero assoluto di casi positivi per regione. Dunque per confrontare l'andamento dei contagi tra le diverse regioni può essere utile rapportare i valori giornalieri per regione con una cifra di riferimento, per esempio 100000 abitanti.
 
@@ -80,8 +82,10 @@ Con lo stesso procedimento, applica la trasformazione anche alle colonne *terapi
 
 Salva il nuovo dataset con il nome `covid19-ita-regioni-per-100k`.
 
-TODO: convertire in float?
+### 6. Dataset Provinciale Ridotto
 
+Il dataset *dpc-covid19-ita-province* ha alcuni campi contenenti codici territoriali e informazioni extra che possono essere rimossi nel caso non vengano utilizzati per ulteriori analisi. Clicca sul dataset e rimuovi le colonne *stato*, *codice_regione*, *codice_provincia*, *note*, *codice_nuts_1*, *codice_nuts_2* e *codice_nuts_3*.
 
+Ogni regione nel dataset ha anche una provincia in più denominata "In fase di definizione/aggiornamento", usata per indicare i dati non ancora assegnati ad una specifica provincia. Per escludere questa provincia fittizia dal risultato, seleziona la prima stringa "In fase di definizione/aggiornamento" che trovi nella colonna *denominazione_provincia* e clicca sull'opzione *Exclude...* nel menu a tendina. Nella nuova schermata vedrai un preview del dataset senza le righe in cui `denominazione_provincia='In fase di definizione/aggiornamento'`. Clicca su *Apply* per confermare la trasformazione.
 
 
